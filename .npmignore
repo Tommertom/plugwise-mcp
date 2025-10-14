@@ -1,0 +1,42 @@
+# Source files (only ship compiled build/)
+src/
+scripts/
+docs/
+
+# Development files
+.env
+.env.*
+*.log
+*.tsbuildinfo
+
+# Test files
+tests/
+*.test.ts
+*.spec.ts
+
+# IDE
+.vscode/
+.cursor/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Documentation that's not needed in package
+docs/
+*.md
+!README.md
+
+# Config files
+tsconfig.json
+.editorconfig
+.prettierrc
+.eslintrc*
+
+# Scripts
+scripts/
+
+# OS files
+.DS_Store
+Thumbs.db
