@@ -3,8 +3,8 @@
  * Manages the active Plugwise client connection
  */
 
-import { PlugwiseClient } from '../plugwise-client.js';
-import { PlugwiseConfig } from '../plugwise-types.js';
+import { PlugwiseClient } from '../client/plugwise-client.js';
+import { PlugwiseConfig } from '../types/plugwise-types.js';
 
 /**
  * Connection Service

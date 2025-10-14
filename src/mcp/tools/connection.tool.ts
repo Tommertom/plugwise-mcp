@@ -4,9 +4,9 @@
  */
 
 import { z } from 'zod';
-import { ConnectionService } from '../services/connection.service.js';
-import { HubDiscoveryService } from '../services/hub-discovery.service.js';
-import { PlugwiseConfig } from '../plugwise-types.js';
+import { ConnectionService } from '../../services/connection.service.js';
+import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
+import { PlugwiseConfig } from '../../types/plugwise-types.js';
 
 export function registerConnectionTool(
     server: any,

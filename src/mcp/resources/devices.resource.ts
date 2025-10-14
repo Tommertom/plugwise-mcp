@@ -4,7 +4,7 @@
  */
 
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ConnectionService } from '../services/connection.service.js';
+import { ConnectionService } from '../../services/connection.service.js';
 
 export function registerDevicesResource(server: any, connectionService: ConnectionService): void {
     server.registerResource(

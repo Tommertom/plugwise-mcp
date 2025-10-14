@@ -80,7 +80,13 @@ To configure Claude Desktop to use the Plugwise MCP server, edit the `claude_des
   "mcpServers": {
     "plugwise": {
       "command": "npx",
-      "args": ["-y", "plugwise-mcp-server@latest"]
+      "args": ["-y", "plugwise-mcp-server@latest"],
+      "env": {
+        "HUB1": "abc12345",
+        "HUB1IP": "192.168.1.100",
+        "HUB2": "def67890",
+        "HUB2IP": "192.168.1.101"
+      }
     }
   }
 }
@@ -96,7 +102,13 @@ To configure Cline to use the Plugwise MCP server, edit the `cline_mcp_settings.
     "plugwise": {
       "command": "npx",
       "args": ["-y", "plugwise-mcp-server@latest"],
-      "disabled": false
+      "disabled": false,
+      "env": {
+        "HUB1": "abc12345",
+        "HUB1IP": "192.168.1.100",
+        "HUB2": "def67890",
+        "HUB2IP": "192.168.1.101"
+      }
     }
   }
 }
@@ -111,7 +123,13 @@ To configure Cursor to use the Plugwise MCP server, edit either the file `.curso
   "mcpServers": {
     "plugwise": {
       "command": "npx",
-      "args": ["-y", "plugwise-mcp-server@latest"]
+      "args": ["-y", "plugwise-mcp-server@latest"],
+      "env": {
+        "HUB1": "abc12345",
+        "HUB1IP": "192.168.1.100",
+        "HUB2": "def67890",
+        "HUB2IP": "192.168.1.101"
+      }
     }
   }
 }
@@ -127,7 +145,13 @@ To configure a single project, edit the `.vscode/mcp.json` file in your workspac
     "plugwise": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "plugwise-mcp-server@latest"]
+      "args": ["-y", "plugwise-mcp-server@latest"],
+      "env": {
+        "HUB1": "abc12345",
+        "HUB1IP": "192.168.1.100",
+        "HUB2": "def67890",
+        "HUB2IP": "192.168.1.101"
+      }
     }
   }
 }
@@ -142,7 +166,13 @@ To make the server available in every project you open, edit your user settings:
       "plugwise": {
         "type": "stdio",
         "command": "npx",
-        "args": ["-y", "plugwise-mcp-server@latest"]
+        "args": ["-y", "plugwise-mcp-server@latest"],
+        "env": {
+          "HUB1": "abc12345",
+          "HUB1IP": "192.168.1.100",
+          "HUB2": "def67890",
+          "HUB2IP": "192.168.1.101"
+        }
       }
     }
   }
@@ -158,7 +188,13 @@ To configure Windsurf Editor, edit the file `~/.codeium/windsurf/mcp_config.json
   "mcpServers": {
     "plugwise": {
       "command": "npx",
-      "args": ["-y", "plugwise-mcp-server@latest"]
+      "args": ["-y", "plugwise-mcp-server@latest"],
+      "env": {
+        "HUB1": "abc12345",
+        "HUB1IP": "192.168.1.100",
+        "HUB2": "def67890",
+        "HUB2IP": "192.168.1.101"
+      }
     }
   }
 }
@@ -166,17 +202,25 @@ To configure Windsurf Editor, edit the file `~/.codeium/windsurf/mcp_config.json
 
 ### Environment Variables
 
-The server reads hub passwords from environment variables. Create a `.env` file in your project root or set system-wide environment variables:
+The server reads hub passwords from environment variables. You can provide these in two ways:
+
+**Option 1: MCP Configuration (Recommended)**
+Add the `env` field directly to your MCP client configuration as shown in the examples above.
+
+**Option 2: .env File**
+Create a `.env` file in your project root or set system-wide environment variables:
 
 ```env
 # Hub passwords (8-character codes from gateway stickers)
-HUB1=glmpttxf
-HUB2=dkcqbjkz
+HUB1=abc12345
+HUB2=def67890
 
 # Optional: Known IP addresses for faster discovery and auto-loading
-HUB1IP=192.168.178.235
-HUB2IP=192.168.178.218
+HUB1IP=192.168.1.100
+HUB2IP=192.168.1.101
 ```
+
+**Security Note**: When using the MCP configuration `env` field, credentials are passed securely to the server process. For enhanced security, consider using `.env` files which are typically excluded from version control.
 
 ### Quick Test
 
@@ -210,12 +254,12 @@ Connect to a Plugwise gateway. After scanning, credentials are automatic!
 await mcpClient.callTool('connect', {});
 
 // Connect to specific hub (password from scan)
-await mcpClient.callTool('connect', { host: '192.168.178.235' });
+await mcpClient.callTool('connect', { host: '192.168.1.100' });
 
 // Manual connection (without scanning)
 await mcpClient.callTool('connect', { 
-  host: '192.168.178.235', 
-  password: 'glmpttxf' 
+  host: '192.168.1.100', 
+  password: 'abc12345' 
 });
 ```
 
@@ -503,9 +547,51 @@ for (const hub of scan.discovered) {
 }
 ```
 
+## 📚 Documentation
+
+### Migration Guides
+
+- **[Structure Migration Plan](docs/STRUCTURE-MIGRATION-PLAN.md)** - Complete plan for restructuring project
+- **[Structure Comparison](docs/structure-comparison-diagram.md)** - Visual comparison of architectures
+- **[Migration Checklist](docs/migration-checklist.md)** - Step-by-step migration checklist
+- **[Migration Summary](docs/migration-summary.md)** - Quick reference summary
+
+### Architecture & Design
+
+- **[Architecture Diagram](docs/architecture-diagram.md)** - System architecture overview
+- **[Code Organization](docs/code-organization.md)** - Project structure and conventions
+- **[Reorganization Overview](docs/reorganization-overview.md)** - Historical reorganization notes
+
+### Implementation Guides
+
+- **[Autoload Hubs](docs/autoload-hubs.md)** - Automatic hub loading implementation
+- **[Network Scanning](docs/network-scanning.md)** - Network discovery implementation
+- **[Temperature Tools](docs/temperature-tools-implementation.md)** - Temperature control features
+- **[Sensor & Switch Parsing](docs/sensor-switch-parsing-implementation.md)** - Device parsing logic
+
+### Quick References
+
+- **[Quick Reference](docs/quick-reference.md)** - Common commands and patterns
+- **[Autoload Quick Reference](docs/autoload-quickref.md)** - Autoload feature guide
+- **[Temperature Tools Quick Reference](docs/temperature-tools-quick-reference.md)** - Temperature API guide
+
+### Testing & Development
+
+- **[Test All Script](docs/test-all-script.md)** - Comprehensive testing guide
+- **[Multi-Hub Testing](docs/multi-hub-testing.md)** - Testing with multiple hubs
+- **[List Devices Script](docs/list-devices-script.md)** - Device enumeration guide
+
+### Publishing & Setup
+
+- **[Publishing Guide](docs/publishing-guide.md)** - How to publish to npm
+- **[Setup Guide](docs/setup.md)** - Initial setup instructions
+- **[Publish Checklist](docs/PUBLISH-CHECKLIST.md)** - Pre-publish verification
+
 ## 🌟 Credits
 
 Based on the excellent [python-plugwise](https://github.com/plugwise/python-plugwise) library.
+
+Architectural patterns inspired by [sonos-ts-mcp](https://github.com/Tommertom/sonos-ts-mcp).
 
 ## 📄 License
 
@@ -513,10 +599,11 @@ MIT License - See LICENSE file for details
 
 ## 🚀 Version
 
-Current version: **1.0.0**
+Current version: **1.0.2**
 
 - ✅ Full MCP protocol support
 - ✅ Automatic network scanning
 - ✅ Multi-hub management
 - ✅ Complete device control
 - ✅ Comprehensive documentation
+- ✅ Structure migration planning

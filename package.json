@@ -3,20 +3,21 @@
   "version": "1.0.2",
   "description": "MCP server for Plugwise integration",
   "type": "module",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "bin": {
-    "plugwise-mcp-server": "./build/index.js"
+    "plugwise-mcp-server": "./dist/index.js"
   },
   "files": [
-    "build/",
+    "dist/",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && chmod 755 build/index.js",
+    "build": "tsc && chmod 755 dist/index.js",
     "dev": "tsx src/index.ts",
-    "start": "node build/index.js",
-    "test:all": "tsx scripts/test-all.ts"
+    "start": "node dist/index.js",
+    "test:all": "tsx scripts/test-all.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "mcp",

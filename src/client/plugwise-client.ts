@@ -20,7 +20,7 @@ import {
     ConnectionError,
     AuthenticationError,
     PlugwiseError
-} from './plugwise-types.js';
+} from '../types/plugwise-types.js';
 
 const DEFAULT_PORT = 80;
 const DEFAULT_USERNAME = 'smile';

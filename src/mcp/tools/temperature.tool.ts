@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { ConnectionService } from '../services/connection.service.js';
+import { ConnectionService } from '../../services/connection.service.js';
 
 export function registerTemperatureTools(server: any, connectionService: ConnectionService) {
     // Set Temperature Tool

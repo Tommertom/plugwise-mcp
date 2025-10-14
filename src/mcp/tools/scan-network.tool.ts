@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { HubDiscoveryService } from '../services/hub-discovery.service.js';
+import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
 
 export function registerScanNetworkTool(server: any, discoveryService: HubDiscoveryService) {
     server.registerTool(

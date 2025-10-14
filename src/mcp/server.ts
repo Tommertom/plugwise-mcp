@@ -16,9 +16,9 @@ import {
     type CallToolRequest,
     type ListToolsRequest,
 } from '@modelcontextprotocol/sdk/types.js';
-import { getServerConfig } from './config/environment.js';
-import { HubDiscoveryService } from './services/hub-discovery.service.js';
-import { ConnectionService } from './services/connection.service.js';
+import { getServerConfig } from '../config/environment.js';
+import { HubDiscoveryService } from '../services/hub-discovery.service.js';
+import { ConnectionService } from '../services/connection.service.js';
 
 export class PlugwiseMcpServer {
     private server: Server;

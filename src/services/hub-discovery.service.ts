@@ -4,7 +4,7 @@
  */
 
 import { execSync } from 'child_process';
-import { PlugwiseClient } from '../plugwise-client.js';
+import { PlugwiseClient } from '../client/plugwise-client.js';
 import { loadHubCredentials, HubCredentials } from '../config/environment.js';
 
 export interface DiscoveredHub {

@@ -4,8 +4,8 @@
  */
 
 import { z } from 'zod';
-import { ConnectionService } from '../services/connection.service.js';
-import { GatewayMode, DHWMode, RegulationMode } from '../plugwise-types.js';
+import { ConnectionService } from '../../services/connection.service.js';
+import { GatewayMode, DHWMode, RegulationMode } from '../../types/plugwise-types.js';
 
 export function registerGatewayTools(server: any, connectionService: ConnectionService) {
     // Set Gateway Mode Tool

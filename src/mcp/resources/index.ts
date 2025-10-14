@@ -4,7 +4,7 @@
  */
 
 import { registerDevicesResource } from './devices.resource.js';
-import { ConnectionService } from '../services/connection.service.js';
+import { ConnectionService } from '../../services/connection.service.js';
 
 /**
  * Register all MCP resources with the server
