@@ -313,7 +313,7 @@ export class PlugwiseClient {
 
         for (const log of logs) {
             if (!log.type) continue;
-            
+
             // Get measurement - handle both direct text and period structure
             // xml2js with mergeAttrs creates measurement as {_: "value", log_date: "..."}
             let measurementValue: any;
@@ -389,7 +389,7 @@ export class PlugwiseClient {
             const thermostats = Array.isArray(funcs.thermostat_functionality) ? funcs.thermostat_functionality : [funcs.thermostat_functionality];
             for (const thermostat of thermostats) {
                 if (!entity.thermostat) entity.thermostat = {};
-                
+
                 if (thermostat.setpoint) {
                     entity.thermostat.setpoint = parseFloat(thermostat.setpoint);
                 }
@@ -410,7 +410,7 @@ export class PlugwiseClient {
             const offsets = Array.isArray(funcs.temperature_offset_functionality) ? funcs.temperature_offset_functionality : [funcs.temperature_offset_functionality];
             for (const offset of offsets) {
                 if (!entity.temperature_offset) entity.temperature_offset = {};
-                
+
                 if (offset.offset) {
                     entity.temperature_offset.setpoint = parseFloat(offset.offset);
                 }

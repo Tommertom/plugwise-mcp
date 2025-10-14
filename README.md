@@ -44,10 +44,28 @@ npm run build
 
 ### Quick Test
 
+Test the installation without real hardware using mock mode:
+
 ```bash
-# Automatically discover and connect to your hubs
-node scripts/workflow-demo.js
+# Test all read operations
+npm run test:read-only -- --mock
+
+# Test protocol features
+npm run test:features -- --mock
 ```
+
+Or with real hardware:
+
+```bash
+# Set up gateway credentials
+echo "PLUGWISE_HOST=192.168.1.100" > .env
+echo "PLUGWISE_PASSWORD=your-gateway-password" >> .env
+
+# Run tests
+npm run test:read-only
+```
+
+See [Quick Test Guide](docs/quick-test-guide.md) for more options.
 
 ### Start the Server
 
@@ -577,7 +595,9 @@ for (const hub of scan.discovered) {
 
 ### Testing & Development
 
-- **[Test All Script](docs/test-all-script.md)** - Comprehensive testing guide
+- **[Quick Test Guide](docs/quick-test-guide.md)** - Fast start testing guide
+- **[Test Scripts Documentation](docs/test-scripts.md)** - Comprehensive testing documentation
+- **[Test All Script](docs/test-all-script.md)** - HTTP-based testing guide
 - **[Multi-Hub Testing](docs/multi-hub-testing.md)** - Testing with multiple hubs
 - **[List Devices Script](docs/list-devices-script.md)** - Device enumeration guide
 

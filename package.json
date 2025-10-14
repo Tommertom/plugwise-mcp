@@ -17,6 +17,8 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test:all": "tsx scripts/test-all.ts",
+    "test:read-only": "tsx scripts/test-read-only.ts",
+    "test:features": "tsx scripts/test-features.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

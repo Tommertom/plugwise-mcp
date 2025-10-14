@@ -12,7 +12,7 @@
  * - Provides summary statistics
  */
 
-import { PlugwiseClient } from '../src/mcp/plugwise-client.js';
+import { PlugwiseClient } from '../src/client/plugwise-client.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -112,7 +112,7 @@ async function scanHub(hub: { name: string, host: string, password: string }) {
 
         // Get all devices
         const data = await client.getDevices();
-        const devices = Object.entries(data.entities);
+        const devices = Object.entries(data.entities) as Array<[string, any]>;
 
         console.log(`📦 Total Devices: ${devices.length}\n`);
 
@@ -209,7 +209,7 @@ async function scanHub(hub: { name: string, host: string, password: string }) {
         // Statistics
         console.log(`\n\n📊 ${hub.name} Statistics:`);
         console.log('─'.repeat(80));
-        
+
         const stats = {
             total: devices.length,
             withTemp: devices.filter(([_, d]) => d.sensors?.temperature !== undefined).length,
