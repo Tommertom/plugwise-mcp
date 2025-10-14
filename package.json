@@ -1,20 +1,11 @@
 {
   "name": "plugwise-mcp-server",
   "version": "1.0.0",
-  "description": "Model Context Protocol server for Plugwise smart home integration with automatic network discovery",
+  "description": "MCP server for Plugwise integration",
   "type": "module",
   "main": "build/mcp/server.js",
-  "bin": {
-    "plugwise-mcp-server": "./bin/plugwise-mcp-server.js"
-  },
-  "files": [
-    "build",
-    "bin",
-    "README.md"
-  ],
   "scripts": {
-    "build": "tsc && chmod 755 build/mcp/server.js && chmod 755 bin/plugwise-mcp-server.js",
-    "prepare": "npm run build",
+    "build": "tsc && chmod 755 build/mcp/server.js",
     "dev": "tsx src/mcp/server.ts",
     "start": "node build/mcp/server.js",
     "test:all": "tsx scripts/test-all.ts"
@@ -22,26 +13,10 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "plugwise",
-    "smart-home",
-    "home-automation",
-    "thermostat",
-    "energy-monitoring",
-    "adam",
-    "anna",
-    "smile",
-    "stretch"
+    "plugwise"
   ],
-  "author": "Tom Schreck",
+  "author": "",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Tommertom/plugwise-mcp-server.git"
-  },
-  "bugs": {
-    "url": "https://github.com/Tommertom/plugwise-mcp-server/issues"
-  },
-  "homepage": "https://github.com/Tommertom/plugwise-mcp-server#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
     "@types/xml2js": "^0.4.14",
