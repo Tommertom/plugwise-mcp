@@ -65,6 +65,28 @@ export class PlugwiseMcpServer {
                     }
                 },
                 {
+                    name: 'add_hub',
+                    description: 'Add a new Plugwise hub by providing its name (used as password). Scans the network to find the hub and stores it in the /hubs folder.',
+                    inputSchema: {
+                        type: 'object',
+                        properties: {
+                            hubName: {
+                                type: 'string',
+                                description: 'The hub name/ID (e.g., glmpuuxg) which is also used as the password'
+                            }
+                        },
+                        required: ['hubName']
+                    }
+                },
+                {
+                    name: 'list_hubs',
+                    description: 'List all registered Plugwise hubs from the /hubs folder and in-memory registry',
+                    inputSchema: {
+                        type: 'object',
+                        properties: {}
+                    }
+                },
+                {
                     name: 'connect',
                     description: 'Connect to a Plugwise gateway using host and password',
                     inputSchema: {
@@ -225,6 +247,10 @@ export class PlugwiseMcpServer {
             switch (name) {
                 case 'scan_network':
                     return await this.handleScanNetwork(args);
+                case 'add_hub':
+                    return await this.handleAddHub(args);
+                case 'list_hubs':
+                    return await this.handleListHubs(args);
                 case 'connect':
                     return await this.handleConnect(args);
                 case 'get_devices':
@@ -302,6 +328,128 @@ export class PlugwiseMcpServer {
                             success: false,
                             error: error instanceof Error ? error.message : String(error)
                         }, null, 2)
+                    }
+                ],
+                isError: true
+            };
+        }
+    }
+
+    private async handleAddHub(args: unknown) {
+        const hubName = typeof args === 'object' && args !== null && 'hubName' in args
+            ? (args.hubName as string)
+            : undefined;
+
+        // Validate input
+        if (!hubName || hubName.trim() === '') {
+            const syntaxMessage = `❌ Hub name is required.
+
+Syntax: /addhub <hub-name>
+
+Example: /addhub glmpuuxg
+
+The hub name is the unique identifier/password for your Plugwise hub.`;
+
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: syntaxMessage
+                    }
+                ]
+            };
+        }
+
+        try {
+            const result = await this.discoveryService.addHubByName(hubName.trim());
+
+            if (result.success && result.hub) {
+                const successMessage = `✅ Hub found and added successfully!
+
+Hub Details:
+  Name: ${result.hub.name}
+  IP: ${result.hub.ip}
+  Model: ${result.hub.model || 'Unknown'}
+  Firmware: ${result.hub.firmware || 'Unknown'}
+
+The hub has been saved to: /hubs/${hubName}.json`;
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: successMessage
+                        }
+                    ]
+                };
+            } else {
+                const errorMessage = result.error || 'Hub not found on the network';
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `❌ ${errorMessage}`
+                        }
+                    ],
+                    isError: true
+                };
+            }
+        } catch (error) {
+            const errorMessage = `Error adding hub: ${(error as Error).message}`;
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `❌ ${errorMessage}`
+                    }
+                ],
+                isError: true
+            };
+        }
+    }
+
+    private async handleListHubs(args: unknown) {
+        try {
+            // Load hubs from files if not already loaded
+            await this.discoveryService.loadAllHubsFromFiles();
+            
+            const hubs = this.discoveryService.getDiscoveredHubs();
+
+            if (hubs.length === 0) {
+                const message = `📋 No hubs registered yet.\n\nUse /addhub <hub-name> to add a new hub.`;
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: message
+                        }
+                    ]
+                };
+            }
+
+            // Format hub list
+            const hubList = hubs.map((hub, index) => 
+                `  ${index + 1}. ${hub.name}\n     IP: ${hub.ip}\n     Model: ${hub.model || 'Unknown'}\n     Firmware: ${hub.firmware || 'Unknown'}`
+            ).join('\n\n');
+
+            const message = `📋 Registered Hubs (${hubs.length})\n\n${hubList}\n\nUse /connect with the IP address to connect to a hub.`;
+
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: message
+                    }
+                ]
+            };
+        } catch (error) {
+            const errorMessage = `Error listing hubs: ${(error as Error).message}`;
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `❌ ${errorMessage}`
                     }
                 ],
                 isError: true
@@ -743,6 +891,8 @@ export class PlugwiseMcpServer {
         console.error('\n🚀 Plugwise MCP Server started!');
         console.error('\nAvailable Tools:');
         console.error('  - scan_network: Scan network for Plugwise hubs using .env passwords');
+        console.error('  - add_hub: Add a new hub by name (scans network and saves to /hubs folder)');
+        console.error('  - list_hubs: List all registered hubs');
         console.error('  - connect: Connect to Plugwise gateway');
         console.error('  - get_devices: Get all devices and their states');
         console.error('  - set_temperature: Set thermostat temperature');

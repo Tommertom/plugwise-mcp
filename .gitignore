@@ -38,3 +38,6 @@ coverage/
 # Logs
 logs/
 *.log
+
+# Hub configurations (exclude JSON files but keep README)
+/hubs/*.json

@@ -10,6 +10,8 @@ This directory contains comprehensive read-only test scripts for the Plugwise MC
 |--------|---------|---------|----------|
 | Read-Only Tests | `npm run test:read-only` | Comprehensive device & sensor testing | ~30s |
 | Feature Tests | `npm run test:features` | Protocol & tool validation | ~20s |
+| Add Hub Test | `tsx scripts/test-add-hub.ts <hub-name>` | Test adding a hub by name | ~60s |
+| List Hubs Test | `tsx scripts/test-list-hubs.ts` | Test listing registered hubs | <1s |
 | Legacy Tests | `npm run test:all` | HTTP-based testing (alternative) | ~60s |
 
 ### Quick Start

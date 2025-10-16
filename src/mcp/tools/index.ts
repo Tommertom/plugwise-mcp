@@ -4,6 +4,8 @@
  */
 
 import { registerScanNetworkTool } from './scan-network.tool.js';
+import { registerAddHubTool } from './add-hub.tool.js';
+import { registerListHubsTool } from './list-hubs.tool.js';
 import { registerConnectionTool } from './connection.tool.js';
 import { registerDeviceTools } from './device.tool.js';
 import { registerTemperatureTools } from './temperature.tool.js';
@@ -22,6 +24,8 @@ export function registerAllTools(
 ): void {
     // Network and connection tools
     registerScanNetworkTool(server, discoveryService);
+    registerAddHubTool(server, discoveryService);
+    registerListHubsTool(server, discoveryService);
     registerConnectionTool(server, connectionService, discoveryService);
 
     // Device tools

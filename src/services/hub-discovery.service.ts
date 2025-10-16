@@ -4,6 +4,8 @@
  */
 
 import { execSync } from 'child_process';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 import { PlugwiseClient } from '../client/plugwise-client.js';
 import { loadHubCredentials, HubCredentials } from '../config/environment.js';
 
@@ -22,6 +24,24 @@ export interface DiscoveredHub {
  */
 export class HubDiscoveryService {
     private discoveredHubs: Map<string, DiscoveredHub> = new Map();
+    private hubsDirectory: string;
+
+    constructor() {
+        // Set hubs directory to /hubs folder in project root
+        this.hubsDirectory = path.join(process.cwd(), 'hubs');
+        this.ensureHubsDirectory();
+    }
+
+    /**
+     * Ensure the hubs directory exists
+     */
+    private async ensureHubsDirectory(): Promise<void> {
+        try {
+            await fs.mkdir(this.hubsDirectory, { recursive: true });
+        } catch (error) {
+            console.error('Error creating hubs directory:', error);
+        }
+    }
 
     /**
      * Get all discovered hubs
@@ -42,6 +62,200 @@ export class HubDiscoveryService {
      */
     addHub(hub: DiscoveredHub): void {
         this.discoveredHubs.set(hub.ip, hub);
+    }
+
+    /**
+     * Save a hub to a JSON file in the /hubs directory
+     */
+    private async saveHubToFile(hubName: string, hub: DiscoveredHub): Promise<void> {
+        try {
+            await this.ensureHubsDirectory();
+            const filePath = path.join(this.hubsDirectory, `${hubName}.json`);
+            const hubData = {
+                name: hub.name,
+                ip: hub.ip,
+                password: hub.password,
+                model: hub.model,
+                firmware: hub.firmware,
+                discoveredAt: hub.discoveredAt.toISOString()
+            };
+            await fs.writeFile(filePath, JSON.stringify(hubData, null, 2), 'utf-8');
+            console.log(`✓ Hub saved to ${filePath}`);
+        } catch (error) {
+            console.error('Error saving hub to file:', error);
+            throw new Error(`Failed to save hub: ${(error as Error).message}`);
+        }
+    }
+
+    /**
+     * Load a hub from a JSON file in the /hubs directory
+     */
+    private async loadHubFromFile(hubName: string): Promise<DiscoveredHub | null> {
+        try {
+            const filePath = path.join(this.hubsDirectory, `${hubName}.json`);
+            const content = await fs.readFile(filePath, 'utf-8');
+            const hubData = JSON.parse(content);
+            return {
+                name: hubData.name,
+                ip: hubData.ip,
+                password: hubData.password,
+                model: hubData.model,
+                firmware: hubData.firmware,
+                discoveredAt: new Date(hubData.discoveredAt)
+            };
+        } catch (error) {
+            // File doesn't exist or can't be read
+            return null;
+        }
+    }
+
+    /**
+     * Load all hubs from the /hubs directory
+     */
+    async loadAllHubsFromFiles(): Promise<void> {
+        try {
+            await this.ensureHubsDirectory();
+            const files = await fs.readdir(this.hubsDirectory);
+            
+            for (const file of files) {
+                if (file.endsWith('.json')) {
+                    const hubName = file.replace('.json', '');
+                    const hub = await this.loadHubFromFile(hubName);
+                    if (hub) {
+                        this.addHub(hub);
+                        console.log(`✓ Loaded hub from file: ${hubName} at ${hub.ip}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error loading hubs from files:', error);
+        }
+    }
+
+    /**
+     * Add a hub by scanning the network with a specific hub name/password
+     */
+    async addHubByName(hubName: string): Promise<{
+        success: boolean;
+        hub?: DiscoveredHub;
+        error?: string;
+    }> {
+        try {
+            console.log(`🔍 Scanning network for hub: ${hubName}`);
+            
+            // First, check if we already have this hub in a file
+            const existingHub = await this.loadHubFromFile(hubName);
+            if (existingHub) {
+                // Try to connect to verify it's still there
+                try {
+                    const testClient = new PlugwiseClient({
+                        host: existingHub.ip,
+                        password: hubName,
+                        username: 'smile'
+                    });
+                    
+                    const gatewayInfo = await testClient.connect();
+                    const updatedHub: DiscoveredHub = {
+                        name: gatewayInfo.name || hubName,
+                        ip: existingHub.ip,
+                        password: hubName,
+                        model: gatewayInfo.model,
+                        firmware: gatewayInfo.version,
+                        discoveredAt: new Date()
+                    };
+                    
+                    this.addHub(updatedHub);
+                    await this.saveHubToFile(hubName, updatedHub);
+                    
+                    return { success: true, hub: updatedHub };
+                } catch (error) {
+                    // Hub at saved IP is no longer accessible, scan network
+                    console.log(`⚠ Hub at saved IP ${existingHub.ip} not accessible, scanning network...`);
+                }
+            }
+            
+            // Scan the network to find the hub
+            const networkToScan = this.detectLocalNetwork();
+            console.log(`📡 Scanning network ${networkToScan}...`);
+            
+            const hub = await this.scanForSpecificHub(networkToScan, hubName);
+            
+            if (hub) {
+                this.addHub(hub);
+                await this.saveHubToFile(hubName, hub);
+                return { success: true, hub };
+            } else {
+                return { 
+                    success: false, 
+                    error: `Hub "${hubName}" not found on network ${networkToScan}. Please ensure the hub is connected and the name is correct.` 
+                };
+            }
+        } catch (error) {
+            return { 
+                success: false, 
+                error: (error as Error).message 
+            };
+        }
+    }
+
+    /**
+     * Scan network for a specific hub by name/password
+     */
+    private async scanForSpecificHub(
+        network: string,
+        hubName: string
+    ): Promise<DiscoveredHub | null> {
+        const [baseIp] = network.split('/');
+        const [octet1, octet2, octet3] = baseIp.split('.');
+        const networkBase = `${octet1}.${octet2}.${octet3}`;
+
+        const scanPromises: Promise<DiscoveredHub | null>[] = [];
+
+        for (let lastOctet = 1; lastOctet <= 254; lastOctet++) {
+            const ip = `${networkBase}.${lastOctet}`;
+
+            scanPromises.push(
+                (async () => {
+                    try {
+                        const testClient = new PlugwiseClient({
+                            host: ip,
+                            password: hubName,
+                            username: 'smile'
+                        });
+
+                        // Set a short timeout for scanning
+                        const timeoutPromise = new Promise<never>((_, reject) =>
+                            setTimeout(() => reject(new Error('timeout')), 2000)
+                        );
+
+                        const gatewayInfo = await Promise.race([
+                            testClient.connect(),
+                            timeoutPromise
+                        ]);
+
+                        if (gatewayInfo) {
+                            const hub: DiscoveredHub = {
+                                name: gatewayInfo.name || hubName,
+                                ip,
+                                password: hubName,
+                                model: gatewayInfo.model,
+                                firmware: gatewayInfo.version,
+                                discoveredAt: new Date()
+                            };
+                            console.log(`✓ Found hub at ${ip}: ${hub.name}`);
+                            return hub;
+                        }
+                    } catch (error) {
+                        // Ignore connection failures during scan
+                    }
+                    return null;
+                })()
+            );
+        }
+
+        // Wait for all scans and return the first successful result
+        const results = await Promise.all(scanPromises);
+        return results.find(hub => hub !== null) || null;
     }
 
     /**
