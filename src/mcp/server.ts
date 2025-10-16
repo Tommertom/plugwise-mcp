@@ -344,9 +344,9 @@ export class PlugwiseMcpServer {
         if (!hubName || hubName.trim() === '') {
             const syntaxMessage = `❌ Hub name is required.
 
-Syntax: /addhub <hub-name>
+Usage: Call add_hub tool with hubName parameter
 
-Example: /addhub glmpuuxg
+Example: { "hubName": "glmpuuxg" }
 
 The hub name is the unique identifier/password for your Plugwise hub.`;
 
@@ -412,7 +412,7 @@ The hub has been saved to: /hubs/${hubName}.json`;
         try {
             // Load hubs from files if not already loaded
             await this.discoveryService.loadAllHubsFromFiles();
-            
+
             const hubs = this.discoveryService.getDiscoveredHubs();
 
             if (hubs.length === 0) {
@@ -429,7 +429,7 @@ The hub has been saved to: /hubs/${hubName}.json`;
             }
 
             // Format hub list
-            const hubList = hubs.map((hub, index) => 
+            const hubList = hubs.map((hub, index) =>
                 `  ${index + 1}. ${hub.name}\n     IP: ${hub.ip}\n     Model: ${hub.model || 'Unknown'}\n     Firmware: ${hub.firmware || 'Unknown'}`
             ).join('\n\n');
 

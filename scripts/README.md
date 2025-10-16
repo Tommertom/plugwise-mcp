@@ -10,8 +10,10 @@ This directory contains comprehensive read-only test scripts for the Plugwise MC
 |--------|---------|---------|----------|
 | Read-Only Tests | `npm run test:read-only` | Comprehensive device & sensor testing | ~30s |
 | Feature Tests | `npm run test:features` | Protocol & tool validation | ~20s |
+| Scan Hub | `tsx scripts/test-scan-hub.ts <hub-name>` | Network scan to find & add hub | ~3-5s |
 | Add Hub Test | `tsx scripts/test-add-hub.ts <hub-name>` | Test adding a hub by name | ~60s |
 | List Hubs Test | `tsx scripts/test-list-hubs.ts` | Test listing registered hubs | <1s |
+| List All Devices | `tsx scripts/list-all-devices.ts` | Scan all hubs and list devices | ~10s |
 | Legacy Tests | `npm run test:all` | HTTP-based testing (alternative) | ~60s |
 
 ### Quick Start
@@ -101,7 +103,71 @@ Detailed protocol and feature validation.
    All 3 required tools present
 ```
 
-### 3. test-utils.ts
+### 3. test-scan-hub.ts
+Network scanning test for discovering Plugwise hubs.
+
+**Purpose:**
+- Scan local network for Plugwise hubs
+- Test network detection algorithm
+- Verify hub discovery with password
+- Save discovered hub configuration
+
+**Usage:**
+```bash
+tsx scripts/test-scan-hub.ts <hub-name>
+
+# Example
+tsx scripts/test-scan-hub.ts glmpttxf
+```
+
+**What It Does:**
+1. Detects local network automatically
+2. Scans all 254 IPs in the subnet
+3. Tests each IP with provided hub password
+4. Saves successful discovery to `/hubs/<hub-name>.json`
+5. Verifies connection and counts devices
+
+**Output Example:**
+```
+🧪 Hub Scanning Test
+================================================================================
+Hub Name: glmpttxf
+================================================================================
+
+🔍 ADD HUB: glmpttxf
+📁 Checking for saved hub configuration...
+ℹ️  No saved configuration found
+
+📡 Detected network from default route: 192.168.178.0/24
+📡 Network to scan: 192.168.178.0/24
+
+🔍 Starting network scan on 192.168.178.1-254 for hub: glmpttxf
+⏱️  Timeout per IP: 3 seconds
+📊 Total IPs to scan: 254
+
+✅ SUCCESS! Found hub at 192.168.178.235: Plugwise Gateway (smile_open_therm)
+   Firmware: 3.7.8
+   Scan time: 0.6s, IPs checked: 9
+
+📊 Progress: 50/254 IPs scanned (3.1s elapsed, 204 active)
+🎉 Scan completed successfully in 3.2s
+```
+
+**Features:**
+- Smart network detection (default route)
+- Progress updates every 50 IPs
+- Early exit when hub found
+- Detailed error logging
+- Connection verification
+- Device count check
+
+**Performance:**
+- Fast: 3-5 seconds typical
+- Parallel scanning: 254 IPs simultaneously
+- 3-second timeout per IP
+- Early exit optimization
+
+### 4. test-utils.ts
 Shared utilities for MCP server testing.
 
 **Exports:**

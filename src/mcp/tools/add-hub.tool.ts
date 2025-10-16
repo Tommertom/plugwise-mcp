@@ -10,7 +10,7 @@ export function registerAddHubTool(server: any, discoveryService: HubDiscoverySe
         'add_hub',
         {
             title: 'Add Plugwise Hub',
-            description: 'Add a new Plugwise hub by providing its name (used as password). Scans the network to find the hub and stores it in the /hubs folder.',
+            description: 'Add a new Plugwise hub by providing its name (used as password). Scans the network to find the hub and stores it in the /hubs folder as a JSON file.',
             inputSchema: {
                 hubName: {
                     type: 'string',
@@ -45,9 +45,9 @@ export function registerAddHubTool(server: any, discoveryService: HubDiscoverySe
             if (!hubName || hubName.trim() === '') {
                 const syntaxMessage = `❌ Hub name is required.
 
-Syntax: /addhub <hub-name>
+Usage: Call add_hub tool with hubName parameter
 
-Example: /addhub glmpuuxg
+Example: { "hubName": "glmpuuxg" }
 
 The hub name is the unique identifier/password for your Plugwise hub.`;
 
@@ -67,7 +67,7 @@ The hub name is the unique identifier/password for your Plugwise hub.`;
 
             try {
                 console.log(`🔍 Searching for hub: ${hubName}`);
-                
+
                 // Scan the network for the hub using the provided name as password
                 const result = await discoveryService.addHubByName(hubName.trim());
 

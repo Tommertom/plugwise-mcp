@@ -2,29 +2,28 @@
 
 ## Overview
 
-The `/addhub` command allows you to add new Plugwise hubs to your system by scanning the network and storing the hub information in JSON files.
+The `add_hub` MCP tool allows you to add new Plugwise hubs to your system by scanning the network and storing the hub information in JSON files.
 
 ## Usage
 
-### Command Syntax
+### MCP Tool Call
 
-```
-/addhub <hub-name>
+```json
+{
+  "name": "add_hub",
+  "arguments": {
+    "hubName": "glmpuuxg"
+  }
+}
 ```
 
 ### Parameters
 
-- `hub-name` (required): The unique identifier/password for your Plugwise hub (e.g., `glmpuuxg`)
-
-### Example
-
-```
-/addhub glmpuuxg
-```
+- `hubName` (required): The unique identifier/password for your Plugwise hub (e.g., `glmpuuxg`)
 
 ## How It Works
 
-1. **Network Scanning**: When you run `/addhub` with a hub name, the system scans your local network to find the Plugwise hub using that name as the password.
+1. **Network Scanning**: When you call the `add_hub` tool with a hub name, the system scans your local network to find the Plugwise hub using that name as the password.
 
 2. **Hub Discovery**: The system tests each IP address on your network (typically 192.168.1.0/24) to find the hub that responds to the provided password.
 
@@ -53,14 +52,14 @@ Each hub is stored in a JSON file with the following structure:
 
 ### Missing Hub Name
 
-If you run `/addhub` without providing a hub name, you'll see:
+If you call `add_hub` without providing a hub name parameter, you'll see:
 
 ```
 ❌ Hub name is required.
 
-Syntax: /addhub <hub-name>
+Usage: Call add_hub tool with hubName parameter
 
-Example: /addhub glmpuuxg
+Example: { "hubName": "glmpuuxg" }
 
 The hub name is the unique identifier/password for your Plugwise hub.
 ```

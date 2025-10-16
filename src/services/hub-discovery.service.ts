@@ -141,11 +141,16 @@ export class HubDiscoveryService {
         error?: string;
     }> {
         try {
-            console.log(`🔍 Scanning network for hub: ${hubName}`);
+            console.log(`\n${'='.repeat(80)}`);
+            console.log(`🔍 ADD HUB: ${hubName}`);
+            console.log(`${'='.repeat(80)}\n`);
             
             // First, check if we already have this hub in a file
+            console.log(`📁 Checking for saved hub configuration...`);
             const existingHub = await this.loadHubFromFile(hubName);
             if (existingHub) {
+                console.log(`✓ Found saved hub at ${existingHub.ip}`)
+                console.log(`🔌 Verifying connection to saved IP...`);
                 // Try to connect to verify it's still there
                 try {
                     const testClient = new PlugwiseClient({
@@ -164,36 +169,49 @@ export class HubDiscoveryService {
                         discoveredAt: new Date()
                     };
                     
+                    console.log(`✅ Connection successful!`);
+                    console.log(`   Hub: ${updatedHub.name} (${updatedHub.model})`);
+                    console.log(`   IP: ${updatedHub.ip}`);
+                    console.log(`   Firmware: ${updatedHub.firmware}\n`);
+                    
                     this.addHub(updatedHub);
                     await this.saveHubToFile(hubName, updatedHub);
                     
                     return { success: true, hub: updatedHub };
                 } catch (error) {
                     // Hub at saved IP is no longer accessible, scan network
-                    console.log(`⚠ Hub at saved IP ${existingHub.ip} not accessible, scanning network...`);
+                    console.log(`⚠️  Hub at saved IP ${existingHub.ip} not accessible: ${(error as Error).message}`);
+                    console.log(`   Proceeding to network scan...\n`);
                 }
+            } else {
+                console.log(`ℹ️  No saved configuration found\n`);
             }
             
             // Scan the network to find the hub
             const networkToScan = this.detectLocalNetwork();
-            console.log(`📡 Scanning network ${networkToScan}...`);
+            console.log(`📡 Network to scan: ${networkToScan}\n`);
             
             const hub = await this.scanForSpecificHub(networkToScan, hubName);
             
             if (hub) {
                 this.addHub(hub);
                 await this.saveHubToFile(hubName, hub);
+                console.log(`\n✅ Hub successfully added and saved!\n`);
                 return { success: true, hub };
             } else {
+                const errorMsg = `Hub "${hubName}" not found on network ${networkToScan}. Please ensure the hub is connected and the name is correct.`;
+                console.log(`\n❌ ${errorMsg}\n`);
                 return { 
                     success: false, 
-                    error: `Hub "${hubName}" not found on network ${networkToScan}. Please ensure the hub is connected and the name is correct.` 
+                    error: errorMsg
                 };
             }
         } catch (error) {
+            const errorMsg = (error as Error).message;
+            console.log(`\n❌ Error: ${errorMsg}\n`);
             return { 
                 success: false, 
-                error: (error as Error).message 
+                error: errorMsg
             };
         }
     }
@@ -209,6 +227,15 @@ export class HubDiscoveryService {
         const [octet1, octet2, octet3] = baseIp.split('.');
         const networkBase = `${octet1}.${octet2}.${octet3}`;
 
+        console.log(`🔍 Starting network scan on ${networkBase}.1-254 for hub: ${hubName}`);
+        console.log(`⏱️  Timeout per IP: 3 seconds`);
+        console.log(`📊 Total IPs to scan: 254`);
+        
+        let foundHub: DiscoveredHub | null = null;
+        let scannedCount = 0;
+        let activeScans = 0;
+        const startTime = Date.now();
+
         const scanPromises: Promise<DiscoveredHub | null>[] = [];
 
         for (let lastOctet = 1; lastOctet <= 254; lastOctet++) {
@@ -216,6 +243,12 @@ export class HubDiscoveryService {
 
             scanPromises.push(
                 (async () => {
+                    // Early exit if hub already found
+                    if (foundHub) {
+                        return null;
+                    }
+
+                    activeScans++;
                     try {
                         const testClient = new PlugwiseClient({
                             host: ip,
@@ -223,9 +256,9 @@ export class HubDiscoveryService {
                             username: 'smile'
                         });
 
-                        // Set a short timeout for scanning
+                        // Increased timeout from 2s to 3s for better reliability
                         const timeoutPromise = new Promise<never>((_, reject) =>
-                            setTimeout(() => reject(new Error('timeout')), 2000)
+                            setTimeout(() => reject(new Error('timeout')), 3000)
                         );
 
                         const gatewayInfo = await Promise.race([
@@ -242,20 +275,50 @@ export class HubDiscoveryService {
                                 firmware: gatewayInfo.version,
                                 discoveredAt: new Date()
                             };
-                            console.log(`✓ Found hub at ${ip}: ${hub.name}`);
+                            
+                            if (!foundHub) {
+                                foundHub = hub;
+                                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                                console.log(`✅ SUCCESS! Found hub at ${ip}: ${hub.name} (${hub.model})`);
+                                console.log(`   Firmware: ${hub.firmware}`);
+                                console.log(`   Scan time: ${elapsed}s, IPs checked: ${scannedCount}`);
+                            }
                             return hub;
                         }
                     } catch (error) {
-                        // Ignore connection failures during scan
+                        // Log detailed errors for debugging
+                        const errorMsg = (error as Error).message;
+                        if (errorMsg !== 'timeout' && !errorMsg.includes('ECONNREFUSED') && !errorMsg.includes('ETIMEDOUT')) {
+                            console.log(`   ⚠️  ${ip}: ${errorMsg}`);
+                        }
+                    } finally {
+                        activeScans--;
+                        scannedCount++;
+                        
+                        // Progress logging every 50 IPs
+                        if (scannedCount % 50 === 0) {
+                            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                            console.log(`   📊 Progress: ${scannedCount}/254 IPs scanned (${elapsed}s elapsed, ${activeScans} active)`);
+                        }
                     }
                     return null;
                 })()
             );
         }
 
-        // Wait for all scans and return the first successful result
+        // Wait for all scans to complete or hub to be found
         const results = await Promise.all(scanPromises);
-        return results.find(hub => hub !== null) || null;
+        
+        const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        
+        if (foundHub) {
+            console.log(`🎉 Scan completed successfully in ${totalElapsed}s`);
+            return foundHub;
+        } else {
+            console.log(`❌ Scan completed - no hub found in ${totalElapsed}s`);
+            console.log(`   Scanned ${scannedCount} IPs on network ${networkBase}.0/24`);
+            return null;
+        }
     }
 
     /**
@@ -402,13 +465,27 @@ export class HubDiscoveryService {
      */
     private detectLocalNetwork(): string {
         try {
-            const routeOutput = execSync('ip route | grep "scope link" | head -1', { encoding: 'utf-8' });
+            // Strategy 1: Try to get default route network
+            const defaultRoute = execSync('ip route | grep default | head -1', { encoding: 'utf-8' });
+            const srcMatch = defaultRoute.match(/src (\d+\.\d+\.\d+\.\d+)/);
+            
+            if (srcMatch) {
+                const ip = srcMatch[1];
+                const [octet1, octet2, octet3] = ip.split('.');
+                const network = `${octet1}.${octet2}.${octet3}.0/24`;
+                console.log(`📡 Detected network from default route: ${network}`);
+                return network;
+            }
+            
+            // Strategy 2: Try scope link (but skip VPN interfaces)
+            const routeOutput = execSync('ip route | grep "scope link" | grep -v tun | grep -v tap | head -1', { encoding: 'utf-8' });
             const match = routeOutput.match(/(\d+\.\d+\.\d+\.\d+\/\d+)/);
             if (match) {
+                console.log(`📡 Detected network from scope link: ${match[1]}`);
                 return match[1];
             }
         } catch (error) {
-            // Fallback
+            console.log(`⚠️  Network detection failed, using fallback: 192.168.1.0/24`);
         }
         return '192.168.1.0/24';
     }

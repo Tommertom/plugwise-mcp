@@ -1,13 +1,13 @@
 # Add Hub Feature - Implementation Summary
 
 ## Overview
-Successfully implemented the `/addhub` command for the Plugwise MCP Server, allowing users to add new Plugwise hubs by scanning the network with a specific hub name/password.
+Successfully implemented the `add_hub` MCP tool for the Plugwise MCP Server, allowing clients to add new Plugwise hubs by scanning the network with a specific hub name/password.
 
 ## Changes Made
 
 ### 1. Created New Tool: `add-hub.tool.ts`
 - **Location**: `/home/tom/plugwise/src/mcp/tools/add-hub.tool.ts`
-- **Purpose**: MCP tool that handles the `/addhub` command
+- **Purpose**: MCP tool that handles adding hubs by name
 - **Features**:
   - Validates hub name input (required parameter)
   - Shows syntax help if no hub name is provided
@@ -61,7 +61,7 @@ Successfully implemented the `/addhub` command for the Plugwise MCP Server, allo
 
 ## How It Works
 
-1. **User invokes command**: `/addhub glmpuuxg`
+1. **Client invokes tool**: `add_hub` with `{ "hubName": "glmpuuxg" }`
 2. **Validation**: System checks if hub name is provided
 3. **Check existing file**: Looks for existing hub file in `/hubs` folder
 4. **Network scan**: Scans local network (auto-detected or specified) for the hub
@@ -86,8 +86,13 @@ Successfully implemented the `/addhub` command for the Plugwise MCP Server, allo
 ## Usage Examples
 
 ### Valid Usage
-```
-/addhub glmpuuxg
+```json
+{
+  "name": "add_hub",
+  "arguments": {
+    "hubName": "glmpuuxg"
+  }
+}
 ```
 
 **Response:**
@@ -104,24 +109,32 @@ The hub has been saved to: /hubs/glmpuuxg.json
 ```
 
 ### Invalid Usage (No Hub Name)
-```
-/addhub
+```json
+{
+  "name": "add_hub",
+  "arguments": {}
+}
 ```
 
 **Response:**
 ```
 ❌ Hub name is required.
 
-Syntax: /addhub <hub-name>
+Usage: Call add_hub tool with hubName parameter
 
-Example: /addhub glmpuuxg
+Example: { "hubName": "glmpuuxg" }
 
 The hub name is the unique identifier/password for your Plugwise hub.
 ```
 
 ### Hub Not Found
-```
-/addhub invalidhub
+```json
+{
+  "name": "add_hub",
+  "arguments": {
+    "hubName": "invalidhub"
+  }
+}
 ```
 
 **Response:**
@@ -144,7 +157,7 @@ Run the test script:
 tsx scripts/test-add-hub.ts glmpuuxg
 ```
 
-Or test within the MCP server by using the `/addhub` command.
+Or test by calling the `add_hub` tool through an MCP client.
 
 ## Build Status
 
