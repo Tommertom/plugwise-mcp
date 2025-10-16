@@ -116,7 +116,7 @@ export class HubDiscoveryService {
         try {
             await this.ensureHubsDirectory();
             const files = await fs.readdir(this.hubsDirectory);
-            
+
             for (const file of files) {
                 if (file.endsWith('.json')) {
                     const hubName = file.replace('.json', '');
@@ -144,7 +144,7 @@ export class HubDiscoveryService {
             console.log(`\n${'='.repeat(80)}`);
             console.log(`🔍 ADD HUB: ${hubName}`);
             console.log(`${'='.repeat(80)}\n`);
-            
+
             // First, check if we already have this hub in a file
             console.log(`📁 Checking for saved hub configuration...`);
             const existingHub = await this.loadHubFromFile(hubName);
@@ -158,7 +158,7 @@ export class HubDiscoveryService {
                         password: hubName,
                         username: 'smile'
                     });
-                    
+
                     const gatewayInfo = await testClient.connect();
                     const updatedHub: DiscoveredHub = {
                         name: gatewayInfo.name || hubName,
@@ -168,15 +168,15 @@ export class HubDiscoveryService {
                         firmware: gatewayInfo.version,
                         discoveredAt: new Date()
                     };
-                    
+
                     console.log(`✅ Connection successful!`);
                     console.log(`   Hub: ${updatedHub.name} (${updatedHub.model})`);
                     console.log(`   IP: ${updatedHub.ip}`);
                     console.log(`   Firmware: ${updatedHub.firmware}\n`);
-                    
+
                     this.addHub(updatedHub);
                     await this.saveHubToFile(hubName, updatedHub);
-                    
+
                     return { success: true, hub: updatedHub };
                 } catch (error) {
                     // Hub at saved IP is no longer accessible, scan network
@@ -186,13 +186,13 @@ export class HubDiscoveryService {
             } else {
                 console.log(`ℹ️  No saved configuration found\n`);
             }
-            
+
             // Scan the network to find the hub
             const networkToScan = this.detectLocalNetwork();
             console.log(`📡 Network to scan: ${networkToScan}\n`);
-            
+
             const hub = await this.scanForSpecificHub(networkToScan, hubName);
-            
+
             if (hub) {
                 this.addHub(hub);
                 await this.saveHubToFile(hubName, hub);
@@ -201,16 +201,16 @@ export class HubDiscoveryService {
             } else {
                 const errorMsg = `Hub "${hubName}" not found on network ${networkToScan}. Please ensure the hub is connected and the name is correct.`;
                 console.log(`\n❌ ${errorMsg}\n`);
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: errorMsg
                 };
             }
         } catch (error) {
             const errorMsg = (error as Error).message;
             console.log(`\n❌ Error: ${errorMsg}\n`);
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: errorMsg
             };
         }
@@ -230,7 +230,7 @@ export class HubDiscoveryService {
         console.log(`🔍 Starting network scan on ${networkBase}.1-254 for hub: ${hubName}`);
         console.log(`⏱️  Timeout per IP: 3 seconds`);
         console.log(`📊 Total IPs to scan: 254`);
-        
+
         let foundHub: DiscoveredHub | null = null;
         let scannedCount = 0;
         let activeScans = 0;
@@ -275,7 +275,7 @@ export class HubDiscoveryService {
                                 firmware: gatewayInfo.version,
                                 discoveredAt: new Date()
                             };
-                            
+
                             if (!foundHub) {
                                 foundHub = hub;
                                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -294,7 +294,7 @@ export class HubDiscoveryService {
                     } finally {
                         activeScans--;
                         scannedCount++;
-                        
+
                         // Progress logging every 50 IPs
                         if (scannedCount % 50 === 0) {
                             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -308,9 +308,9 @@ export class HubDiscoveryService {
 
         // Wait for all scans to complete or hub to be found
         const results = await Promise.all(scanPromises);
-        
+
         const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        
+
         if (foundHub) {
             console.log(`🎉 Scan completed successfully in ${totalElapsed}s`);
             return foundHub;
@@ -468,7 +468,7 @@ export class HubDiscoveryService {
             // Strategy 1: Try to get default route network
             const defaultRoute = execSync('ip route | grep default | head -1', { encoding: 'utf-8' });
             const srcMatch = defaultRoute.match(/src (\d+\.\d+\.\d+\.\d+)/);
-            
+
             if (srcMatch) {
                 const ip = srcMatch[1];
                 const [octet1, octet2, octet3] = ip.split('.');
@@ -476,7 +476,7 @@ export class HubDiscoveryService {
                 console.log(`📡 Detected network from default route: ${network}`);
                 return network;
             }
-            
+
             // Strategy 2: Try scope link (but skip VPN interfaces)
             const routeOutput = execSync('ip route | grep "scope link" | grep -v tun | grep -v tap | head -1', { encoding: 'utf-8' });
             const match = routeOutput.match(/(\d+\.\d+\.\d+\.\d+\/\d+)/);
