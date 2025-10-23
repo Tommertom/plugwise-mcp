@@ -11,7 +11,7 @@ This directory contains comprehensive read-only test scripts for the Plugwise MC
 | Read-Only Tests | `npm run test:read-only` | Comprehensive device & sensor testing | ~30s |
 | Feature Tests | `npm run test:features` | Protocol & tool validation | ~20s |
 | Scan Hub | `tsx scripts/test-scan-hub.ts <hub-name>` | Network scan to find & add hub | ~3-5s |
-| Add Hub Test | `tsx scripts/test-add-hub.ts <hub-name>` | Test adding a hub by name | ~60s |
+| Add Hub Test | `node scripts/test-add-hub.js <hub-name>` | Test adding a hub by name | ~60s |
 | List Hubs Test | `tsx scripts/test-list-hubs.ts` | Test listing registered hubs | <1s |
 | List All Devices | `tsx scripts/list-all-devices.ts` | Scan all hubs and list devices | ~10s |
 | Legacy Tests | `npm run test:all` | HTTP-based testing (alternative) | ~60s |
@@ -117,7 +117,7 @@ Network scanning test for discovering Plugwise hubs.
 tsx scripts/test-scan-hub.ts <hub-name>
 
 # Example
-tsx scripts/test-scan-hub.ts glmpttxf
+tsx scripts/test-scan-hub.ts example123
 ```
 
 **What It Does:**
@@ -131,21 +131,21 @@ tsx scripts/test-scan-hub.ts glmpttxf
 ```
 🧪 Hub Scanning Test
 ================================================================================
-Hub Name: glmpttxf
+Hub Name: example123
 ================================================================================
 
-🔍 ADD HUB: glmpttxf
+🔍 ADD HUB: example123
 📁 Checking for saved hub configuration...
 ℹ️  No saved configuration found
 
-📡 Detected network from default route: 192.168.178.0/24
-📡 Network to scan: 192.168.178.0/24
+📡 Detected network from default route: 192.168.1.0/24
+📡 Network to scan: 192.168.1.0/24
 
-🔍 Starting network scan on 192.168.178.1-254 for hub: glmpttxf
+🔍 Starting network scan on 192.168.1.1-254 for hub: example123
 ⏱️  Timeout per IP: 3 seconds
 📊 Total IPs to scan: 254
 
-✅ SUCCESS! Found hub at 192.168.178.235: Plugwise Gateway (smile_open_therm)
+✅ SUCCESS! Found hub at 192.168.1.50: Plugwise Gateway (smile_open_therm)
    Firmware: 3.7.8
    Scan time: 0.6s, IPs checked: 9
 

@@ -76,16 +76,16 @@ if (foundHub) {
 **Example Output**:
 ```
 ================================================================================
-🔍 ADD HUB: glmpttxf
+🔍 ADD HUB: example123
 ================================================================================
 
 📁 Checking for saved hub configuration...
 ℹ️  No saved configuration found
 
-📡 Detected network from default route: 192.168.178.0/24
-📡 Network to scan: 192.168.178.0/24
+📡 Detected network from default route: 192.168.1.0/24
+📡 Network to scan: 192.168.1.0/24
 
-🔍 Starting network scan on 192.168.178.1-254 for hub: glmpttxf
+🔍 Starting network scan on 192.168.1.1-254 for hub: example123
 ⏱️  Timeout per IP: 3 seconds
 📊 Total IPs to scan: 254
 ```
@@ -109,22 +109,22 @@ npx tsx scripts/test-scan-hub.ts <hub-name>
 
 ## Test Results
 
-### Test Case: Scan for hub "glmpttxf"
+### Test Case: Scan for hub "example123"
 
-**Network**: 192.168.178.0/24  
+**Network**: 192.168.1.0/24  
 **Result**: ✅ Success  
 **Time**: 3.2 seconds  
-**Hub Found**: 192.168.178.235
+**Hub Found**: 192.168.1.50
 
 **Scan Statistics**:
 - Hub found after checking only 9 IPs (0.6s)
 - Early exit prevented scanning remaining 245 IPs
 - Total scan time: 3.2s (waiting for all parallel operations)
-- Successfully saved to: `/hubs/glmpttxf.json`
+- Successfully saved to: `/hubs/example123.json`
 
 **Console Output Highlights**:
 ```
-✅ SUCCESS! Found hub at 192.168.178.235: Plugwise Gateway (smile_open_therm)
+✅ SUCCESS! Found hub at 192.168.1.50: Plugwise Gateway (smile_open_therm)
    Firmware: 3.7.8
    Scan time: 0.6s, IPs checked: 9
 
@@ -132,11 +132,10 @@ npx tsx scripts/test-scan-hub.ts <hub-name>
 ```
 
 **Notable Observations**:
-1. Network detection correctly identified 192.168.178.0/24
-2. Scan discovered hub at IP 192.168.178.235
-3. Also detected another hub at 192.168.178.218 (invalid credentials for this password)
-4. Logged various network devices with helpful error messages
-5. Connection test successful with 14 devices found
+1. Network detection correctly identified 192.168.1.0/24
+2. Scan discovered hub at IP 192.168.1.50
+3. Logged various network devices with helpful error messages
+4. Connection test successful with devices found
 
 ## Performance Improvements
 
@@ -193,7 +192,7 @@ Potential future improvements:
 
 ### Scan for a hub:
 ```bash
-npx tsx scripts/test-scan-hub.ts glmpttxf
+npx tsx scripts/test-scan-hub.ts <your-hub-name>
 ```
 
 ### Use via MCP tool:
@@ -201,7 +200,7 @@ npx tsx scripts/test-scan-hub.ts glmpttxf
 await use_mcp_tool({
     server_name: "plugwise",
     tool_name: "add_hub",
-    arguments: { hubName: "glmpttxf" }
+    arguments: { hubName: "your-hub-name" }
 });
 ```
 
@@ -210,7 +209,7 @@ await use_mcp_tool({
 import { HubDiscoveryService } from './services/hub-discovery.service.js';
 
 const service = new HubDiscoveryService();
-const result = await service.addHubByName('glmpttxf');
+const result = await service.addHubByName('your-hub-name');
 ```
 
 ## Conclusion
