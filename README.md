@@ -251,30 +251,14 @@ node scripts/workflow-demo.js
 
 ### Network Discovery
 
-#### `scan_network`
-Automatically scan your network for Plugwise hubs using passwords from `.env`.
-
-```javascript
-await mcpClient.callTool('scan_network', {});
-// Returns: { discovered: [ { name, ip, model, firmware } ], scanned_ips: 2 }
-```
-
-**Features:**
-- Tests known IPs first if `HUBxIP` variables are provided (instant)
-- Falls back to full network scan if needed (1-2 minutes)
-- Stores credentials automatically for later use
-
 #### `connect`
-Connect to a Plugwise gateway. After scanning, credentials are automatic!
+Connect to a Plugwise gateway.
 
 ```javascript
-// Auto-connect to first discovered hub
-await mcpClient.callTool('connect', {});
-
-// Connect to specific hub (password from scan)
+// Connect to specific hub
 await mcpClient.callTool('connect', { host: '192.168.1.100' });
 
-// Manual connection (without scanning)
+// Manual connection
 await mcpClient.callTool('connect', { 
   host: '192.168.1.100', 
   password: 'abc12345' 
@@ -480,12 +464,6 @@ plugwise/
 3. Test with manual connection: `curl http://<ip>/core/domain_objects`
 4. Ensure gateway isn't overloaded with requests
 
-### Scan Takes Too Long
-
-1. Add `HUBxIP` variables to `.env` for instant scanning
-2. Specify network: `scan_network({ network: '192.168.1.0/24' })`
-3. Check network size (scanning /16 is much slower than /24)
-
 ## 🤝 Integration Examples
 
 ### Using with Claude Code
@@ -522,9 +500,8 @@ Connect to: `http://localhost:3000/mcp`
 ### Morning Routine
 
 ```javascript
-// Scan and connect
-await mcpClient.callTool('scan_network', {});
-await mcpClient.callTool('connect', {});
+// Connect to hub
+await mcpClient.callTool('connect', { host: '192.168.1.100' });
 
 // Set home mode
 await mcpClient.callTool('set_preset', {
@@ -554,11 +531,11 @@ for (const [id, device] of Object.entries(devices.data)) {
 ### Multi-Hub Management
 
 ```javascript
-// Discover all hubs
-const scan = await mcpClient.callTool('scan_network', {});
+// List all hubs
+const hubsList = await mcpClient.callTool('list_hubs', {});
 
 // Get devices from each hub
-for (const hub of scan.discovered) {
+for (const hub of hubsList.hubs) {
   await mcpClient.callTool('connect', { host: hub.ip });
   const devices = await mcpClient.callTool('get_devices', {});
   console.log(`Hub ${hub.ip}: ${Object.keys(devices.data).length} devices`);

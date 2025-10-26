@@ -88,7 +88,7 @@ This allows you to:
 ## Related Commands
 
 - `/hubs` - List all registered hubs
-- `/scan_network` - Scan for all hubs using passwords from the .env file
+- `/add_hub` - Add a new hub by name/ID
 - `/connect` - Connect to a specific hub using IP and password
 
 ## Security Note

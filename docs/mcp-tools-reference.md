@@ -43,28 +43,6 @@ Add a new Plugwise hub by scanning the network.
 
 ---
 
-#### `scan_network`
-Scan the local network for Plugwise hubs using passwords from .env file.
-
-**Parameters:**
-```json
-{
-  "network": "string (optional)" // CIDR notation, e.g., "192.168.1.0/24"
-}
-```
-
-**Example:**
-```json
-{
-  "name": "scan_network",
-  "arguments": {
-    "network": "192.168.1.0/24"
-  }
-}
-```
-
----
-
 #### `connect`
 Connect to a Plugwise gateway.
 
@@ -261,8 +239,13 @@ Set up your environment in `.env`:
 HUB1=glmpuuxg
 HUB1IP=192.168.1.100
 
-HUB2=anotherhub
-HUB2IP=192.168.1.101
+HUB2=abc23456
+HUB2IP=192.168.1.101  # Optional: for quick reference
+```
+
+These can be used with the `add_hub` tool.
+
+---
 ```
 
 These will be automatically loaded and available via `scan_network`.

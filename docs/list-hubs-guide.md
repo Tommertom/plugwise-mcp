@@ -68,7 +68,7 @@ Use /addhub <hub-name> to add a new hub.
 ## Related Commands
 
 - `/addhub <hub-name>` - Add a new hub to the registry
-- `/scan_network` - Scan for hubs using .env file passwords
+- `/add_hub` - Add a hub by name/ID  
 - `/connect` - Connect to a specific hub
 
 ## Technical Details

@@ -21,7 +21,7 @@
 import { spawn, type ChildProcess } from 'child_process';
 import {
     initializeMcpConnection,
-    discoverHubs,
+    listHubs,
     callTool,
     runTest,
     wait,
@@ -40,10 +40,10 @@ async function callToolSafe(toolCall: any): Promise<any> {
         // Return mock data based on tool name
         const toolName = toolCall.name;
 
-        if (toolName === 'scan_network') {
+        if (toolName === 'list_hubs') {
             return {
                 hubs: [
-                    { host: '192.168.1.100', name: 'Mock Plugwise Gateway', model: 'Adam' },
+                    { ip: '192.168.1.100', name: 'Mock Plugwise Gateway', model: 'Adam' },
                 ],
             };
         }
@@ -180,7 +180,7 @@ async function initializeAndDiscover(): Promise<void> {
         return;
     }
 
-    const hubs = await discoverHubs(mcpProcess, 5000);
+    const hubs = await listHubs(mcpProcess);
 
     if (hubs.length === 0) {
         console.log('\n⚠️  No Plugwise hubs found on the network.\n');
@@ -197,7 +197,7 @@ async function initializeAndDiscover(): Promise<void> {
         );
     }
 
-    gatewayHost = hubs[0].host;
+    gatewayHost = (hubs[0] as any).ip || (hubs[0] as any).host;
     gatewayPassword = process.env.PLUGWISE_PASSWORD || '';
 
     if (!gatewayPassword) {
@@ -209,16 +209,16 @@ async function initializeAndDiscover(): Promise<void> {
 }
 
 async function testNetworkScanning(): Promise<void> {
-    console.log('🔍 Testing Network Scanning\n');
+    console.log('🔍 Testing Hub Listing\n');
 
-    await runTest('Scan Network for Hubs', async () => {
+    await runTest('List Hubs', async () => {
         const result = await callToolSafe({
-            name: 'scan_network',
-            arguments: { timeout: 5000 },
+            name: 'list_hubs',
+            arguments: {},
         });
 
         if (!result || !Array.isArray(result.hubs)) {
-            throw new Error('Invalid scan response');
+            throw new Error('Invalid list response');
         }
 
         console.log(`   Found ${result.hubs.length} hub(s)`);

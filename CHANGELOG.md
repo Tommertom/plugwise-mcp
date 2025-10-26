@@ -25,9 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 - **Network Discovery**
-  - `scan_network`: Automatic hub discovery with .env password support
-  - Fast scanning using known IP addresses
-  - Credential storage for auto-connection
+  - `add_hub`: Add hub by name/ID with network scanning
+  - `list_hubs`: List all registered hubs
+  - Credential storage for hub management
 
 - **Device Management**
   - `get_devices`: Retrieve all devices and states

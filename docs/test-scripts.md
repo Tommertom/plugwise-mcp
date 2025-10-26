@@ -57,7 +57,7 @@ Detailed feature testing that validates individual MCP tools and protocol featur
 
 **Features:**
 - MCP protocol validation (tool listing, schemas, descriptions)
-- Individual tool testing (scan_network, connect, get_devices)
+- Individual tool testing (list_hubs, connect, get_devices)
 - Data structure validation
 - Data consistency testing across multiple reads
 - Error handling verification

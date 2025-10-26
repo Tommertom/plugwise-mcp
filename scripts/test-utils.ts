@@ -191,15 +191,14 @@ export async function callTool(
 }
 
 /**
- * Discover Plugwise hubs on the network
+ * Helper to list hubs
  */
-export async function discoverHubs(
-    serverProcess: ChildProcess,
-    timeout: number = 5000
+export async function listHubs(
+    serverProcess: ChildProcess
 ): Promise<PlugwiseHub[]> {
     const result = await callTool(serverProcess, {
-        name: 'scan_network',
-        arguments: { timeout },
+        name: 'list_hubs',
+        arguments: {},
     });
 
     // Result has already been parsed by callTool

@@ -3,7 +3,6 @@
  * Aggregates and registers all MCP tools
  */
 
-import { registerScanNetworkTool } from './scan-network.tool.js';
 import { registerAddHubTool } from './add-hub.tool.js';
 import { registerListHubsTool } from './list-hubs.tool.js';
 import { registerConnectionTool } from './connection.tool.js';
@@ -23,7 +22,6 @@ export function registerAllTools(
     discoveryService: HubDiscoveryService
 ): void {
     // Network and connection tools
-    registerScanNetworkTool(server, discoveryService);
     registerAddHubTool(server, discoveryService);
     registerListHubsTool(server, discoveryService);
     registerConnectionTool(server, connectionService, discoveryService);

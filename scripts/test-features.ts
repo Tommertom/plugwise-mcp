@@ -40,7 +40,7 @@ async function callToolSafe(toolCall: any): Promise<any> {
 
         // Mock responses for different tools
         const mockResponses: Record<string, any> = {
-            scan_network: {
+            list_hubs: {
                 hubs: [
                     { host: '192.168.1.100', name: 'Mock Adam', model: 'Adam' },
                     { host: '192.168.1.101', name: 'Mock Anna', model: 'Anna' },
@@ -139,7 +139,7 @@ async function testMcpProtocol(): Promise<void> {
 
     await runTest('Validate Tool Schemas', async () => {
         const requiredTools = [
-            'scan_network',
+            'list_hubs',
             'connect',
             'get_devices',
         ];
@@ -187,45 +187,32 @@ async function testMcpProtocol(): Promise<void> {
 }
 
 async function testNetworkScanning(): Promise<void> {
-    console.log('\n🔍 Testing Network Scanning Tool\n');
+    console.log('\n🔍 Testing Hub Listing Tool\n');
 
-    await runTest('Scan with Default Timeout', async () => {
+    await runTest('List Hubs', async () => {
         const result = await callToolSafe({
-            name: 'scan_network',
+            name: 'list_hubs',
             arguments: {},
         });
 
         if (!result || !Array.isArray(result.hubs)) {
-            throw new Error('Invalid scan result');
+            throw new Error('Invalid list result');
         }
 
         console.log(`   Found ${result.hubs.length} hub(s)`);
     });
 
-    await runTest('Scan with Custom Timeout', async () => {
-        const result = await callToolSafe({
-            name: 'scan_network',
-            arguments: { timeout: 3000 },
-        });
-
-        if (!result || !Array.isArray(result.hubs)) {
-            throw new Error('Invalid scan result');
-        }
-
-        console.log(`   Scan completed in 3s timeout`);
-    });
-
     await runTest('Verify Hub Data Structure', async () => {
         const result = await callToolSafe({
-            name: 'scan_network',
+            name: 'list_hubs',
             arguments: {},
         });
 
         if (result.hubs.length > 0) {
             const hub = result.hubs[0];
 
-            if (!hub.host) {
-                throw new Error('Hub missing host property');
+            if (!hub.ip) {
+                throw new Error('Hub missing ip property');
             }
 
             console.log(`   Hub data structure valid`);

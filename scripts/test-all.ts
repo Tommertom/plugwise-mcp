@@ -7,7 +7,7 @@
  * without making any state-changing operations.
  *
  * Safe tools tested:
- * - scan_network: Discover Plugwise hubs on the network
+ * - list_hubs: List known Plugwise hubs
  * - connect: Connect to gateway and retrieve gateway info
  * - get_devices: Get all devices and their states
  * - resources/read: Read device states via resource URI
@@ -278,11 +278,11 @@ async function testListTools(): Promise<string> {
 }
 
 /**
- * Test: Scan Network for Hubs
+ * Test: List Known Hubs
  */
-async function testScanNetwork(): Promise<string> {
+async function testListHubs(): Promise<string> {
     const result = await sendRequest('tools/call', {
-        name: 'scan_network',
+        name: 'list_hubs',
         arguments: {}
     });
 
@@ -290,12 +290,11 @@ async function testScanNetwork(): Promise<string> {
     const data = JSON.parse(content.text);
 
     if (!data.success) {
-        throw new Error(data.error || 'Scan failed');
+        throw new Error(data.error || 'List failed');
     }
 
-    console.log(`\nScanned ${data.scanned_ips} IPs`);
-    console.log(`Found ${data.discovered.length} hubs:`);
-    data.discovered.forEach((hub: any) => {
+    console.log(`\nFound ${data.hubs.length} hubs:`);
+    data.hubs.forEach((hub: any) => {
         console.log(`  - ${hub.name} at ${hub.ip} (${hub.model || 'unknown model'})`);
     });
 
@@ -563,8 +562,8 @@ async function main(): Promise<void> {
     await runTest('List Available Prompts', testListPrompts, false);
     await runTest('Get Setup Guide Prompt', testGetSetupGuidePrompt, false);
 
-    // Network discovery test (optional - may not find hubs)
-    const scanSuccess = await runTest('Scan Network for Hubs', testScanNetwork, true);
+    // List hubs test (optional - may not have hubs configured)
+    const scanSuccess = await runTest('List Known Hubs', testListHubs, true);
 
     // Connection tests (optional - requires hub)
     const connectSuccess = await runTest('Connect to Gateway', testConnectGateway, true);

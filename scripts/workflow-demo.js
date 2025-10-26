@@ -78,16 +78,16 @@ async function main() {
   console.log("╚══════════════════════════════════════════════════════════╝\n");
 
   try {
-    // Step 1: Network Scanning
-    console.log("📡 Step 1: Scanning network for Plugwise hubs...\n");
-    const scanResult = await callTool("scan_network", {});
+    // Step 1: List Hubs
+    console.log("📡 Step 1: Listing known Plugwise hubs...\n");
+    const listResult = await callTool("list_hubs", {});
 
-    if (scanResult.error) {
-      console.error("❌ Scan failed:", scanResult.error.message);
+    if (listResult.error) {
+      console.error("❌ List failed:", listResult.error.message);
       process.exit(1);
     }
 
-    const scanData = scanResult.result.structuredContent;
+    const scanData = listResult.result.structuredContent;
     console.log(`✅ Scan complete!`);
     console.log(`   Found: ${scanData.discovered.length} hub(s)`);
     console.log(`   Scanned: ${scanData.scanned_ips} IP(s)\n`);

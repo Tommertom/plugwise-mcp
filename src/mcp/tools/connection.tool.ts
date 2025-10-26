@@ -63,7 +63,7 @@ export function registerConnectionTool(
                 }
 
                 if (!finalHost || !finalPassword) {
-                    throw new Error('Host and password are required. Run scan_network first or provide credentials.');
+                    throw new Error('Host and password are required. Use list_hubs to find hubs or provide credentials.');
                 }
 
                 const config: PlugwiseConfig = {
