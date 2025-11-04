@@ -3,23 +3,26 @@
  * Tools for controlling gateway settings and operations
  */
 
-import { z } from 'zod';
 import { ConnectionService } from '../../services/connection.service.js';
 import { GatewayMode, DHWMode, RegulationMode } from '../../types/plugwise-types.js';
+import { ToolRegistry } from '../tool-registry.js';
 
-export function registerGatewayTools(server: any, connectionService: ConnectionService) {
-    // Set Gateway Mode Tool
-    server.registerTool(
+export function registerGatewayTools(registry: ToolRegistry, connectionService: ConnectionService) {
+    registry.registerTool(
         'set_gateway_mode',
         {
             title: 'Set Gateway Mode',
-            description: 'Set the gateway mode (home, away, vacation)',
+            description: 'Set the gateway mode (home, away, vacation). This is a system-wide setting that affects all zones and presets. Home mode uses normal schedules, away mode uses reduced temperatures, and vacation mode provides minimal heating/cooling.',
             inputSchema: {
-                mode: z.enum(['home', 'away', 'vacation']).describe('Gateway mode')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    mode: {
+                        type: 'string',
+                        enum: ['home', 'away', 'vacation'],
+                        description: 'Gateway mode: "home" for normal operation, "away" for temporary absence, "vacation" for extended absence'
+                    }
+                },
+                required: ['mode']
             }
         },
         async ({ mode }: { mode: 'home' | 'away' | 'vacation' }) => {
@@ -30,45 +33,34 @@ export function registerGatewayTools(server: any, connectionService: ConnectionS
                 const output = { success: true };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
         }
     );
 
-    // Set DHW Mode Tool
-    server.registerTool(
+    registry.registerTool(
         'set_dhw_mode',
         {
             title: 'Set DHW Mode',
-            description: 'Set the domestic hot water (DHW) heating mode',
+            description: 'Set the domestic hot water (DHW) heating mode for systems with hot water control. Auto mode follows the schedule, boost mode provides immediate hot water heating, comfort mode maintains higher temperature, and off mode disables DHW heating.',
             inputSchema: {
-                mode: z.enum(['auto', 'boost', 'comfort', 'off']).describe('DHW mode')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    mode: {
+                        type: 'string',
+                        enum: ['auto', 'boost', 'comfort', 'off'],
+                        description: 'DHW mode: "auto" follows schedule, "boost" for immediate heating, "comfort" for higher temperature, "off" to disable'
+                    }
+                },
+                required: ['mode']
             }
         },
         async ({ mode }: { mode: 'auto' | 'boost' | 'comfort' | 'off' }) => {
@@ -77,47 +69,35 @@ export function registerGatewayTools(server: any, connectionService: ConnectionS
                 await client.setDHWMode(mode as DHWMode);
 
                 const output = { success: true };
-
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
         }
     );
 
-    // Set Regulation Mode Tool
-    server.registerTool(
+    registry.registerTool(
         'set_regulation_mode',
         {
             title: 'Set Regulation Mode',
-            description: 'Set the heating regulation mode',
+            description: 'Set the heating regulation mode. Controls the overall heating system behavior. Use "heating" for normal operation, "off" to disable heating, or bleeding modes for system maintenance.',
             inputSchema: {
-                mode: z.enum(['heating', 'off', 'bleeding_cold', 'bleeding_hot']).describe('Regulation mode')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    mode: {
+                        type: 'string',
+                        enum: ['heating', 'off', 'bleeding_cold', 'bleeding_hot'],
+                        description: 'Regulation mode: "heating" for normal operation, "off" to disable, "bleeding_cold"/"bleeding_hot" for maintenance'
+                    }
+                },
+                required: ['mode']
             }
         },
         async ({ mode }: { mode: 'heating' | 'off' | 'bleeding_cold' | 'bleeding_hot' }) => {
@@ -126,45 +106,28 @@ export function registerGatewayTools(server: any, connectionService: ConnectionS
                 await client.setRegulationMode(mode as RegulationMode);
 
                 const output = { success: true };
-
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
         }
     );
 
-    // Delete Notification Tool
-    server.registerTool(
+    registry.registerTool(
         'delete_notification',
         {
             title: 'Delete Notification',
-            description: 'Delete the active notification from the Plugwise gateway',
-            inputSchema: {},
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+            description: 'Delete the active notification from the Plugwise gateway. Use this to clear system notifications, alerts, or warnings displayed on the gateway.',
+            inputSchema: {
+                type: 'object',
+                properties: {}
             }
         },
         async () => {
@@ -173,45 +136,28 @@ export function registerGatewayTools(server: any, connectionService: ConnectionS
                 await client.deleteNotification();
 
                 const output = { success: true };
-
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
         }
     );
 
-    // Reboot Gateway Tool
-    server.registerTool(
+    registry.registerTool(
         'reboot_gateway',
         {
             title: 'Reboot Gateway',
-            description: 'Reboot the Plugwise gateway (use with caution)',
-            inputSchema: {},
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+            description: 'Reboot the Plugwise gateway (use with caution). This will restart the gateway, temporarily interrupting all control and monitoring. The gateway will be offline for 1-2 minutes. Only use when necessary for troubleshooting.',
+            inputSchema: {
+                type: 'object',
+                properties: {}
             }
         },
         async () => {
@@ -220,29 +166,14 @@ export function registerGatewayTools(server: any, connectionService: ConnectionS
                 await client.rebootGateway();
 
                 const output = { success: true };
-
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }

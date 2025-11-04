@@ -3,24 +3,33 @@
  * Tools for controlling switches and relays
  */
 
-import { z } from 'zod';
 import { ConnectionService } from '../../services/connection.service.js';
+import { ToolRegistry } from '../tool-registry.js';
 
-export function registerSwitchTools(server: any, connectionService: ConnectionService) {
-    server.registerTool(
+export function registerSwitchTools(registry: ToolRegistry, connectionService: ConnectionService) {
+    registry.registerTool(
         'control_switch',
         {
             title: 'Control Switch',
-            description: 'Turn a switch or relay on or off',
+            description: 'Turn a switch or relay on or off. Works with Plugwise switches, relays, and smart plugs. Use this to control any switchable device in your Plugwise network.',
             inputSchema: {
-                appliance_id: z.string().describe('ID of the appliance/device'),
-                state: z.enum(['on', 'off']).describe('Desired state'),
-                model: z.string().optional().describe('Switch model type (default: relay)')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                new_state: z.boolean().optional(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    appliance_id: {
+                        type: 'string',
+                        description: 'ID of the appliance/device to control'
+                    },
+                    state: {
+                        type: 'string',
+                        enum: ['on', 'off'],
+                        description: 'Desired state: "on" to turn on, "off" to turn off'
+                    },
+                    model: {
+                        type: 'string',
+                        description: 'Switch model type (default: relay). Options: relay, switch, plug'
+                    }
+                },
+                required: ['appliance_id', 'state']
             }
         },
         async ({ appliance_id, state, model }: {

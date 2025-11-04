@@ -3,38 +3,41 @@
  * Tool for connecting to Plugwise gateways
  */
 
-import { z } from 'zod';
 import { ConnectionService } from '../../services/connection.service.js';
 import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
 import { PlugwiseConfig } from '../../types/plugwise-types.js';
+import { ToolRegistry } from '../tool-registry.js';
 
 export function registerConnectionTool(
-    server: any,
+    registry: ToolRegistry,
     connectionService: ConnectionService,
     discoveryService: HubDiscoveryService
 ) {
-    server.registerTool(
+    registry.registerTool(
         'connect',
         {
             title: 'Connect to Plugwise Gateway',
-            description: 'Connect to a Plugwise gateway (Adam, Anna, Smile P1, or Stretch) and retrieve gateway information',
+            description: 'Connect to a Plugwise gateway (Adam, Anna, Smile P1, or Stretch) and retrieve gateway information. If no host is provided, automatically connects to the first discovered hub. Returns detailed gateway information including model, type, version, hostname, and MAC address.',
             inputSchema: {
-                host: z.string().optional().describe('IP address or hostname of the Plugwise gateway. If omitted, connects to first discovered hub from scan.'),
-                password: z.string().optional().describe('Password for the Plugwise gateway. If omitted and host matches a discovered hub, uses stored password.'),
-                port: z.number().optional().describe('Port number (default: 80)'),
-                username: z.string().optional().describe('Username (default: smile)')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                gateway_info: z.object({
-                    name: z.string(),
-                    model: z.string(),
-                    type: z.string(),
-                    version: z.string(),
-                    hostname: z.string().optional(),
-                    mac_address: z.string().optional()
-                }).optional(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    host: {
+                        type: 'string',
+                        description: 'IP address or hostname of the Plugwise gateway. If omitted, connects to first discovered hub from registry.'
+                    },
+                    password: {
+                        type: 'string',
+                        description: 'Password for the Plugwise gateway (typically the hub name). If omitted and host matches a discovered hub, uses stored password.'
+                    },
+                    port: {
+                        type: 'number',
+                        description: 'Port number (default: 80)'
+                    },
+                    username: {
+                        type: 'string',
+                        description: 'Username (default: smile)'
+                    }
+                }
             }
         },
         async ({ host, password, port, username }: {
@@ -44,7 +47,6 @@ export function registerConnectionTool(
             username?: string;
         }) => {
             try {
-                // If no host provided, use first discovered hub
                 let finalHost = host;
                 let finalPassword = password;
 
@@ -55,7 +57,6 @@ export function registerConnectionTool(
                         finalPassword = firstHub.password;
                     }
                 } else if (finalHost && !finalPassword) {
-                    // Check if this host was discovered
                     const discoveredHub = discoveryService.getHub(finalHost);
                     if (discoveredHub) {
                         finalPassword = discoveredHub.password;

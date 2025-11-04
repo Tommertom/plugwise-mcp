@@ -4,41 +4,21 @@
  */
 
 import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
+import { ToolRegistry } from '../tool-registry.js';
 
-export function registerListHubsTool(server: any, discoveryService: HubDiscoveryService) {
-    server.registerTool(
+export function registerListHubsTool(registry: ToolRegistry, discoveryService: HubDiscoveryService) {
+    registry.registerTool(
         'list_hubs',
         {
             title: 'List Registered Hubs',
-            description: 'List all registered Plugwise hubs from the /hubs folder and in-memory registry.',
-            inputSchema: {},
-            outputSchema: {
-                success: {
-                    type: 'boolean'
-                },
-                hubs: {
-                    type: 'array',
-                    items: {
-                        type: 'object',
-                        properties: {
-                            name: { type: 'string' },
-                            ip: { type: 'string' },
-                            model: { type: 'string' },
-                            firmware: { type: 'string' }
-                        }
-                    }
-                },
-                count: {
-                    type: 'number'
-                },
-                message: {
-                    type: 'string'
-                }
+            description: 'List all registered Plugwise hubs from the /hubs folder and in-memory registry. Returns hub information including name, IP address, model, and firmware version for each discovered hub.',
+            inputSchema: {
+                type: 'object',
+                properties: {}
             }
         },
         async () => {
             try {
-                // Load hubs from files if not already loaded
                 await discoveryService.loadAllHubsFromFiles();
                 
                 const hubs = discoveryService.getDiscoveredHubs();
@@ -64,7 +44,6 @@ Use /addhub <hub-name> to add a new hub.`;
                     };
                 }
 
-                // Format hub list
                 const hubList = hubs.map((hub, index) => 
                     `  ${index + 1}. ${hub.name}
      IP: ${hub.ip}

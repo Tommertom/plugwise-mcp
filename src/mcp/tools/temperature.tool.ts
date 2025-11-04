@@ -3,25 +3,37 @@
  * Tools for controlling temperature and presets
  */
 
-import { z } from 'zod';
 import { ConnectionService } from '../../services/connection.service.js';
+import { ToolRegistry } from '../tool-registry.js';
 
-export function registerTemperatureTools(server: any, connectionService: ConnectionService) {
+export function registerTemperatureTools(registry: ToolRegistry, connectionService: ConnectionService) {
     // Set Temperature Tool
-    server.registerTool(
+    registry.registerTool(
         'set_temperature',
         {
             title: 'Set Temperature',
-            description: 'Set the temperature setpoint on a thermostat or zone',
+            description: 'Set the temperature setpoint on a thermostat or zone. Supports single setpoint for heating/cooling systems, or separate low/high setpoints for heat pump systems. Changes take effect immediately.',
             inputSchema: {
-                location_id: z.string().describe('ID of the location/zone'),
-                setpoint: z.number().optional().describe('Temperature setpoint in Celsius'),
-                setpoint_low: z.number().optional().describe('Low temperature setpoint (heating) in Celsius'),
-                setpoint_high: z.number().optional().describe('High temperature setpoint (cooling) in Celsius')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    location_id: {
+                        type: 'string',
+                        description: 'ID of the location/zone to control'
+                    },
+                    setpoint: {
+                        type: 'number',
+                        description: 'Temperature setpoint in Celsius for single-setpoint systems'
+                    },
+                    setpoint_low: {
+                        type: 'number',
+                        description: 'Low temperature setpoint (heating) in Celsius for heat pump systems'
+                    },
+                    setpoint_high: {
+                        type: 'number',
+                        description: 'High temperature setpoint (cooling) in Celsius for heat pump systems'
+                    }
+                },
+                required: ['location_id']
             }
         },
         async ({ location_id, setpoint, setpoint_low, setpoint_high }: {
@@ -43,27 +55,13 @@ export function registerTemperatureTools(server: any, connectionService: Connect
                 const output = { success: true };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
@@ -71,18 +69,24 @@ export function registerTemperatureTools(server: any, connectionService: Connect
     );
 
     // Set Preset Tool
-    server.registerTool(
+    registry.registerTool(
         'set_preset',
         {
             title: 'Set Preset',
-            description: 'Set the preset mode on a thermostat (e.g., home, away, sleep)',
+            description: 'Set the preset mode on a thermostat or zone (e.g., home, away, sleep, vacation). Presets apply predefined temperature settings and behaviors configured in your Plugwise system.',
             inputSchema: {
-                location_id: z.string().describe('ID of the location/zone'),
-                preset: z.string().describe('Preset name (e.g., home, away, sleep, vacation)')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    location_id: {
+                        type: 'string',
+                        description: 'ID of the location/zone to control'
+                    },
+                    preset: {
+                        type: 'string',
+                        description: 'Preset name (e.g., home, away, sleep, vacation, no_frost)'
+                    }
+                },
+                required: ['location_id', 'preset']
             }
         },
         async ({ location_id, preset }: { location_id: string; preset: string }) => {
@@ -93,27 +97,13 @@ export function registerTemperatureTools(server: any, connectionService: Connect
                 const output = { success: true };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
@@ -121,27 +111,20 @@ export function registerTemperatureTools(server: any, connectionService: Connect
     );
 
     // Get Temperature Tool
-    server.registerTool(
+    registry.registerTool(
         'get_temperature',
         {
             title: 'Get Temperature',
             description: 'Get current room temperature and setpoint for a specific thermostat or zone. Returns both the measured temperature and the target setpoint.',
             inputSchema: {
-                device_id: z.string().describe('ID of the device/zone to read temperature from')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                data: z.object({
-                    device_id: z.string(),
-                    device_name: z.string(),
-                    current_temperature: z.number().optional().describe('Current measured room temperature in °C'),
-                    target_setpoint: z.number().optional().describe('Target temperature setpoint in °C'),
-                    setpoint_low: z.number().optional().describe('Heating setpoint for heat pump systems in °C'),
-                    setpoint_high: z.number().optional().describe('Cooling setpoint for heat pump systems in °C'),
-                    control_state: z.string().optional().describe('Current state: idle, heating, cooling, or preheating'),
-                    climate_mode: z.string().optional().describe('Climate mode: heat, cool, auto, etc.')
-                }).optional(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    device_id: {
+                        type: 'string',
+                        description: 'ID of the device/zone to read temperature from'
+                    }
+                },
+                required: ['device_id']
             }
         },
         async ({ device_id }: { device_id: string }) => {
@@ -165,33 +148,16 @@ export function registerTemperatureTools(server: any, connectionService: Connect
                     climate_mode: device.climate_mode
                 };
 
-                const output = {
-                    success: true,
-                    data: result
-                };
+                const output = { success: true, data: result };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
@@ -199,26 +165,14 @@ export function registerTemperatureTools(server: any, connectionService: Connect
     );
 
     // Get All Temperatures Tool
-    server.registerTool(
+    registry.registerTool(
         'get_all_temperatures',
         {
             title: 'Get All Temperatures',
-            description: 'Get current temperatures and setpoints for all thermostats and zones in the system',
-            inputSchema: {},
-            outputSchema: {
-                success: z.boolean(),
-                data: z.array(z.object({
-                    device_id: z.string(),
-                    device_name: z.string(),
-                    device_class: z.string(),
-                    current_temperature: z.number().optional(),
-                    target_setpoint: z.number().optional(),
-                    setpoint_low: z.number().optional(),
-                    setpoint_high: z.number().optional(),
-                    control_state: z.string().optional(),
-                    climate_mode: z.string().optional()
-                })).optional(),
-                error: z.string().optional()
+            description: 'Get current temperatures and setpoints for all thermostats and zones in the system. Returns comprehensive temperature data including measured values, setpoints, control states, and climate modes for every temperature-capable device.',
+            inputSchema: {
+                type: 'object',
+                properties: {}
             }
         },
         async () => {
@@ -248,33 +202,16 @@ export function registerTemperatureTools(server: any, connectionService: Connect
                         climate_mode: device.climate_mode
                     }));
 
-                const output = {
-                    success: true,
-                    data: thermostats
-                };
+                const output = { success: true, data: thermostats };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
@@ -282,25 +219,20 @@ export function registerTemperatureTools(server: any, connectionService: Connect
     );
 
     // Get Temperature Offset Tool
-    server.registerTool(
+    registry.registerTool(
         'get_temperature_offset',
         {
             title: 'Get Temperature Offset',
-            description: 'Get the temperature offset (calibration) for a thermostat device',
+            description: 'Get the temperature offset (calibration) for a thermostat device. The offset is used to calibrate the temperature sensor if it reads incorrectly. Returns the current offset value and its valid range.',
             inputSchema: {
-                device_id: z.string().describe('ID of the thermostat device')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                data: z.object({
-                    device_id: z.string(),
-                    device_name: z.string(),
-                    offset: z.number().optional().describe('Temperature offset in °C'),
-                    lower_bound: z.number().optional(),
-                    upper_bound: z.number().optional(),
-                    resolution: z.number().optional()
-                }).optional(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    device_id: {
+                        type: 'string',
+                        description: 'ID of the thermostat device to query'
+                    }
+                },
+                required: ['device_id']
             }
         },
         async ({ device_id }: { device_id: string }) => {
@@ -326,33 +258,16 @@ export function registerTemperatureTools(server: any, connectionService: Connect
                     resolution: device.temperature_offset.resolution
                 };
 
-                const output = {
-                    success: true,
-                    data: result
-                };
+                const output = { success: true, data: result };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }
@@ -360,18 +275,24 @@ export function registerTemperatureTools(server: any, connectionService: Connect
     );
 
     // Set Temperature Offset Tool
-    server.registerTool(
+    registry.registerTool(
         'set_temperature_offset',
         {
             title: 'Set Temperature Offset',
             description: 'Set the temperature offset (calibration) for a thermostat device. This adjusts the measured temperature by a fixed offset.',
             inputSchema: {
-                device_id: z.string().describe('ID of the thermostat device'),
-                offset: z.number().describe('Temperature offset in °C (can be positive or negative)')
-            },
-            outputSchema: {
-                success: z.boolean(),
-                error: z.string().optional()
+                type: 'object',
+                properties: {
+                    device_id: {
+                        type: 'string',
+                        description: 'ID of the thermostat device'
+                    },
+                    offset: {
+                        type: 'number',
+                        description: 'Temperature offset in °C (can be positive or negative)'
+                    }
+                },
+                required: ['device_id', 'offset']
             }
         },
         async ({ device_id, offset }: { device_id: string; offset: number }) => {
@@ -382,27 +303,13 @@ export function registerTemperatureTools(server: any, connectionService: Connect
                 const output = { success: true };
 
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
+                const output = { success: false, error: (error as Error).message };
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
                     structuredContent: output
                 };
             }

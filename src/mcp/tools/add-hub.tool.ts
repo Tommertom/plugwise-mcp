@@ -4,44 +4,26 @@
  */
 
 import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
+import { ToolRegistry } from '../tool-registry.js';
 
-export function registerAddHubTool(server: any, discoveryService: HubDiscoveryService) {
-    server.registerTool(
+export function registerAddHubTool(registry: ToolRegistry, discoveryService: HubDiscoveryService) {
+    registry.registerTool(
         'add_hub',
         {
             title: 'Add Plugwise Hub',
-            description: 'Add a new Plugwise hub by providing its name (used as password). Scans the network to find the hub and stores it in the /hubs folder as a JSON file.',
+            description: 'Add a new Plugwise hub by providing its name (used as password). Scans the network to find the hub and stores it in the /hubs folder as a JSON file for future use. The hub name is the unique identifier printed on the back of your Plugwise device.',
             inputSchema: {
-                hubName: {
-                    type: 'string',
-                    description: 'The hub name/ID (e.g., glmpuuxg) which is also used as the password'
-                }
-            },
-            outputSchema: {
-                success: {
-                    type: 'boolean'
+                type: 'object',
+                properties: {
+                    hubName: {
+                        type: 'string',
+                        description: 'The hub name/ID (e.g., glmpuuxg) which is also used as the password. This is the unique identifier found on the back label of your Plugwise hub.'
+                    }
                 },
-                hub: {
-                    type: 'object',
-                    properties: {
-                        name: { type: 'string' },
-                        ip: { type: 'string' },
-                        model: { type: 'string' },
-                        firmware: { type: 'string' }
-                    },
-                    optional: true
-                },
-                message: {
-                    type: 'string'
-                },
-                error: {
-                    type: 'string',
-                    optional: true
-                }
+                required: ['hubName']
             }
         },
         async ({ hubName }: { hubName?: string }) => {
-            // Validate input
             if (!hubName || hubName.trim() === '') {
                 const syntaxMessage = `❌ Hub name is required.
 
@@ -68,7 +50,6 @@ The hub name is the unique identifier/password for your Plugwise hub.`;
             try {
                 console.log(`🔍 Searching for hub: ${hubName}`);
 
-                // Scan the network for the hub using the provided name as password
                 const result = await discoveryService.addHubByName(hubName.trim());
 
                 if (result.success && result.hub) {

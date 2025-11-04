@@ -3,20 +3,18 @@
  * Tools for retrieving device information
  */
 
-import { z } from 'zod';
 import { ConnectionService } from '../../services/connection.service.js';
+import { ToolRegistry } from '../tool-registry.js';
 
-export function registerDeviceTools(server: any, connectionService: ConnectionService) {
-    server.registerTool(
+export function registerDeviceTools(registry: ToolRegistry, connectionService: ConnectionService) {
+    registry.registerTool(
         'get_devices',
         {
             title: 'Get All Devices',
-            description: 'Retrieve all Plugwise devices and their current states, sensors, and capabilities',
-            inputSchema: {},
-            outputSchema: {
-                success: z.boolean(),
-                data: z.any().optional(),
-                error: z.string().optional()
+            description: 'Retrieve all Plugwise devices and their current states, sensors, and capabilities. Returns comprehensive information for all connected devices including thermostats, switches, sensors, and other appliances. Includes current readings, capabilities, and operational states.',
+            inputSchema: {
+                type: 'object',
+                properties: {}
             }
         },
         async () => {
