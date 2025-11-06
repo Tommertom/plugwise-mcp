@@ -4,9 +4,16 @@
  */
 
 import { ConnectionService } from '../../services/connection.service.js';
+import { DeviceStorageService } from '../../services/device-storage.service.js';
+import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
 import { ToolRegistry } from '../tool-registry.js';
 
-export function registerDeviceTools(registry: ToolRegistry, connectionService: ConnectionService) {
+export function registerDeviceTools(
+    registry: ToolRegistry, 
+    connectionService: ConnectionService,
+    deviceStorage: DeviceStorageService,
+    discoveryService: HubDiscoveryService
+) {
     registry.registerTool(
         'get_devices',
         {
@@ -21,6 +28,18 @@ export function registerDeviceTools(registry: ToolRegistry, connectionService: C
             try {
                 const client = connectionService.ensureConnected();
                 const data = await client.getDevices();
+
+                // Try to determine hub name from connected client
+                const gatewayInfo = client.getGatewayInfo();
+                const hubName = gatewayInfo?.name || 'unknown';
+
+                // Save devices to storage
+                try {
+                    await deviceStorage.saveDevices(hubName, data.entities);
+                } catch (saveError) {
+                    console.error('Failed to save devices:', saveError);
+                    // Continue even if save fails
+                }
 
                 const output = {
                     success: true,

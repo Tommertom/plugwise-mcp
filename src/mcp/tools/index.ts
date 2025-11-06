@@ -12,6 +12,7 @@ import { registerSwitchTools } from './switch.tool.js';
 import { registerGatewayTools } from './gateway.tool.js';
 import { ConnectionService } from '../../services/connection.service.js';
 import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
+import { DeviceStorageService } from '../../services/device-storage.service.js';
 
 /**
  * Register all MCP tools with the server
@@ -19,7 +20,8 @@ import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
 export function registerAllTools(
     server: any,
     connectionService: ConnectionService,
-    discoveryService: HubDiscoveryService
+    discoveryService: HubDiscoveryService,
+    deviceStorage: DeviceStorageService
 ): void {
     // Network and connection tools
     registerAddHubTool(server, discoveryService);
@@ -27,7 +29,7 @@ export function registerAllTools(
     registerConnectionTool(server, connectionService, discoveryService);
 
     // Device tools
-    registerDeviceTools(server, connectionService);
+    registerDeviceTools(server, connectionService, deviceStorage, discoveryService);
 
     // Control tools
     registerTemperatureTools(server, connectionService);

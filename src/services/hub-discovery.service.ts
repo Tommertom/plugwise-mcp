@@ -27,8 +27,8 @@ export class HubDiscoveryService {
     private hubsDirectory: string;
 
     constructor() {
-        // Set hubs directory to /hubs folder in project root
-        this.hubsDirectory = path.join(process.cwd(), 'hubs');
+        // Set hubs directory to mcp_data/plugwise/hubs folder
+        this.hubsDirectory = path.join(process.cwd(), 'mcp_data', 'plugwise', 'hubs');
         this.ensureHubsDirectory();
     }
 
@@ -65,7 +65,7 @@ export class HubDiscoveryService {
     }
 
     /**
-     * Save a hub to a JSON file in the /hubs directory
+     * Save a hub to a JSON file in the mcp_data/plugwise/hubs directory
      */
     private async saveHubToFile(hubName: string, hub: DiscoveredHub): Promise<void> {
         try {
@@ -88,7 +88,7 @@ export class HubDiscoveryService {
     }
 
     /**
-     * Load a hub from a JSON file in the /hubs directory
+     * Load a hub from a JSON file in the mcp_data/plugwise/hubs directory
      */
     private async loadHubFromFile(hubName: string): Promise<DiscoveredHub | null> {
         try {
@@ -110,7 +110,7 @@ export class HubDiscoveryService {
     }
 
     /**
-     * Load all hubs from the /hubs directory
+     * Load all hubs from the mcp_data/plugwise/hubs directory
      */
     async loadAllHubsFromFiles(): Promise<void> {
         try {

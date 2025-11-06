@@ -41,3 +41,6 @@ logs/
 
 # Hub configurations (exclude JSON files but keep README)
 /hubs/*.json
+
+# MCP data directory (runtime data storage)
+mcp_data/
