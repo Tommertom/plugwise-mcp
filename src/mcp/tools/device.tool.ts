@@ -33,9 +33,13 @@ export function registerDeviceTools(
                 const gatewayInfo = client.getGatewayInfo();
                 const hubName = gatewayInfo?.name || 'unknown';
 
+                // Get password from connection config
+                const config = connectionService.getConfig();
+                const password = config?.password;
+
                 // Save devices to storage
                 try {
-                    await deviceStorage.saveDevices(hubName, data.entities);
+                    await deviceStorage.saveDevices(hubName, data.entities, password);
                 } catch (saveError) {
                     console.error('Failed to save devices:', saveError);
                     // Continue even if save fails

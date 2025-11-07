@@ -81,7 +81,7 @@ export class DeviceStorageService {
      * Save devices for a specific hub
      * Each device is saved as a separate file: {hubName}_{deviceId}.json
      */
-    async saveDevices(hubName: string, entities: Record<string, GatewayEntity>): Promise<void> {
+    async saveDevices(hubName: string, entities: Record<string, GatewayEntity>, password?: string): Promise<void> {
         try {
             await this.ensureDevicesDirectory();
 
@@ -95,13 +95,18 @@ export class DeviceStorageService {
                 const fileName = `${hubName}_${device.id}.json`;
                 const filePath = path.join(this.devicesDirectory, fileName);
 
-                const deviceData = {
+                const deviceData: any = {
                     hubName,
                     deviceId: device.id,
                     humanReadableName: device.name,
                     updatedAt: new Date().toISOString(),
                     device
                 };
+
+                // Add password if provided
+                if (password) {
+                    deviceData.password = password;
+                }
 
                 await fs.writeFile(filePath, JSON.stringify(deviceData, null, 2), 'utf-8');
 

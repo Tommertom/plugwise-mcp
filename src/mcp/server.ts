@@ -47,9 +47,7 @@ export class PlugwiseMcpServer {
             {
                 name: 'plugwise-mcp-server',
                 version: '1.0.0',
-                description: `Smart home automation control server for Plugwise devices. Specifically designed for coding agents and AI-driven home automation workflows. Provides comprehensive tools for discovering, connecting to, and controlling Plugwise climate control systems (Adam, Anna thermostats), power monitoring (Smile P1), and smart switches (Stretch). Enables coding agents to build intelligent heating schedules, energy monitoring dashboards, automation routines, and integration with other smart home platforms. Supports network discovery, persistent hub management, real-time device state monitoring, and programmatic control of temperature, presets, and appliances.
-                
-                Always requires the hub name or IP to run tools, so research these with the list_hubs tool. When the user refers to a location, room or device, try the device tool first for all the hubs to find the right hub id and device id. Put this in your plan.\n${hubsDescription}\n${devicesDescription}`,
+                description: `Smart home automation control server for Plugwise devices. Specifically designed for coding agents and AI-driven home automation workflows. Provides comprehensive tools for discovering, connecting to, and controlling Plugwise climate control systems (Adam, Anna thermostats), power monitoring (Smile P1), and smart switches (Stretch). Enables coding agents to build intelligent heating schedules, energy monitoring dashboards, automation routines, and integration with other smart home platforms. Supports network discovery, persistent hub management, real-time device state monitoring, and programmatic control of temperature, presets, and appliances. Always requires the hub name or IP to run tools. When the user refers to a location, room or device, try the device tool first for all the hubs to find the right hub id and device id. Put this in your plan. Connect to the hub without permission.${hubsDescription}${devicesDescription}`,
             },
             {
                 capabilities: {
@@ -68,7 +66,7 @@ export class PlugwiseMcpServer {
         this.setupHandlers();
     }
 
-    private getKnownHubsSync(): Array<{ name: string; ip: string }> {
+    private getKnownHubsSync(): Array<{ name: string; ip: string; password: string }> {
         try {
             const hubsDirectory = path.join(process.cwd(), 'mcp_data', 'plugwise', 'hubs');
 
@@ -77,7 +75,7 @@ export class PlugwiseMcpServer {
             }
 
             const files = fs.readdirSync(hubsDirectory);
-            const hubs: Array<{ name: string; ip: string }> = [];
+            const hubs: Array<{ name: string; ip: string; password: string }> = [];
 
             for (const file of files) {
                 if (file.endsWith('.json')) {
@@ -87,7 +85,8 @@ export class PlugwiseMcpServer {
                         const hubData = JSON.parse(content);
                         hubs.push({
                             name: hubData.name || file.replace('.json', ''),
-                            ip: hubData.ip || 'unknown'
+                            ip: hubData.ip || 'unknown',
+                            password: file.replace('.json', '')
                         });
                     } catch (error) {
                         console.error(`Failed to load hub from ${file}:`, error);
@@ -102,16 +101,16 @@ export class PlugwiseMcpServer {
         }
     }
 
-    private formatHubsDescription(hubs: Array<{ name: string; ip: string }>): string {
+    private formatHubsDescription(hubs: Array<{ name: string; ip: string; password: string }>): string {
         if (hubs.length === 0) {
             return '\n\nNo hubs configured yet. Ask the user to provide the name of the hub and then use the add_hub tool to add and scan it.\n- ';
         }
 
-        const hubList = hubs.map(hub => `- ${hub.name} (${hub.ip})`).join('\n');
+        const hubList = hubs.map(hub => `- ${hub.name} (${hub.ip}) - password: ${hub.password}`).join('\n');
         return `\n\nThe hubs known now are listed below. If you are missing a hub, ask the user for the name of the hub and then use the add_hub tool to add it.\n${hubList}`;
     }
 
-    private getKnownDevicesSync(): Array<{ hubName: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }> {
+    private getKnownDevicesSync(): Array<{ hubName: string; password?: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }> {
         try {
             const devicesDirectory = path.join(process.cwd(), 'mcp_data', 'plugwise', 'devices');
 
@@ -120,7 +119,7 @@ export class PlugwiseMcpServer {
             }
 
             const files = fs.readdirSync(devicesDirectory);
-            const devicesByHub: Array<{ hubName: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }> = [];
+            const devicesByHubMap: Map<string, { password?: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }> = new Map();
 
             for (const file of files) {
                 if (file.endsWith('.json')) {
@@ -128,24 +127,54 @@ export class PlugwiseMcpServer {
                         const filePath = path.join(devicesDirectory, file);
                         const content = fs.readFileSync(filePath, 'utf-8');
                         const deviceData = JSON.parse(content);
-                        
-                        if (deviceData.devices && Array.isArray(deviceData.devices)) {
+
+                        // Handle individual device files (new format)
+                        if (deviceData.device && deviceData.hubName) {
+                            const device = deviceData.device;
+                            const hubName = deviceData.hubName;
+                            const password = deviceData.password;
+
+                            if (!devicesByHubMap.has(hubName)) {
+                                devicesByHubMap.set(hubName, { password, devices: [] });
+                            }
+
+                            // Update password if it wasn't set before
+                            if (password && !devicesByHubMap.get(hubName)!.password) {
+                                devicesByHubMap.get(hubName)!.password = password;
+                            }
+
+                            devicesByHubMap.get(hubName)!.devices.push({
+                                id: device.id || deviceData.deviceId,
+                                name: device.name || deviceData.humanReadableName || 'unknown',
+                                type: device.type || device.dev_class || 'unknown',
+                                location: device.location
+                            });
+                        }
+                        // Handle legacy format with devices array (if any exist)
+                        else if (deviceData.devices && Array.isArray(deviceData.devices)) {
                             const devices = deviceData.devices.map((d: any) => ({
                                 id: d.id,
                                 name: d.name,
                                 type: d.type || d.dev_class || 'unknown',
                                 location: d.location
                             }));
-                            
-                            devicesByHub.push({
-                                hubName: deviceData.hubName || file.replace('.json', ''),
-                                devices
-                            });
+
+                            const hubName = deviceData.hubName || file.replace('.json', '');
+                            if (!devicesByHubMap.has(hubName)) {
+                                devicesByHubMap.set(hubName, { devices: [] });
+                            }
+                            devicesByHubMap.get(hubName)!.devices.push(...devices);
                         }
                     } catch (error) {
                         console.error(`Failed to load devices from ${file}:`, error);
                     }
                 }
+            }
+
+            // Convert map to array
+            const devicesByHub: Array<{ hubName: string; password?: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }> = [];
+            for (const [hubName, data] of devicesByHubMap.entries()) {
+                devicesByHub.push({ hubName, password: data.password, devices: data.devices });
             }
 
             return devicesByHub;
@@ -155,19 +184,20 @@ export class PlugwiseMcpServer {
         }
     }
 
-    private formatDevicesDescription(devicesByHub: Array<{ hubName: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }>): string {
+    private formatDevicesDescription(devicesByHub: Array<{ hubName: string; password?: string; devices: Array<{ id: string; name: string; type: string; location?: string }> }>): string {
         if (devicesByHub.length === 0) {
             return '\n\nNo devices cached yet. Connect to a hub and use get_devices to scan and cache devices.';
         }
 
         let description = '\n\nKnown devices (use get_devices to refresh):';
-        
+
         for (const hub of devicesByHub) {
-            description += `\n\nHub: ${hub.hubName}`;
+            const passwordInfo = hub.password ? ` - password: ${hub.password}` : '';
+            description += `\n\nHub: ${hub.hubName}${passwordInfo}`;
             const deviceList = hub.devices
                 .map(d => {
                     const location = d.location ? ` in ${d.location}` : '';
-                    return `  - ${d.name}${location} (${d.type}) [ID: ${d.id}]`;
+                    return `- ${d.name}${location} (${d.type}) [ID: ${d.id}]`;
                 })
                 .join('\n');
             description += `\n${deviceList}`;

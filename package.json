@@ -17,6 +17,8 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "test:connection": "npm run build && node dist/scripts/test-mcp-connection.js",
+    "test:devices": "npm run build && node dist/scripts/test-device-discovery.js",
     "doPublish": "npm run build && npm version patch && npm publish"
   },
   "keywords": [

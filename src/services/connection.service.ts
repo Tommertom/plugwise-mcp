@@ -12,12 +12,20 @@ import { PlugwiseConfig } from '../types/plugwise-types.js';
  */
 export class ConnectionService {
     private client: PlugwiseClient | null = null;
+    private currentConfig: PlugwiseConfig | null = null;
 
     /**
      * Get the active client instance
      */
     getClient(): PlugwiseClient | null {
         return this.client;
+    }
+
+    /**
+     * Get the current connection configuration
+     */
+    getConfig(): PlugwiseConfig | null {
+        return this.currentConfig;
     }
 
     /**
@@ -31,6 +39,7 @@ export class ConnectionService {
      * Connect to a Plugwise gateway
      */
     async connect(config: PlugwiseConfig): Promise<PlugwiseClient> {
+        this.currentConfig = config;
         this.client = new PlugwiseClient(config);
         await this.client.connect();
         return this.client;
@@ -41,6 +50,7 @@ export class ConnectionService {
      */
     disconnect(): void {
         this.client = null;
+        this.currentConfig = null;
     }
 
     /**
