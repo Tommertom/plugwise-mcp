@@ -44,3 +44,4 @@ logs/
 
 # MCP data directory (runtime data storage)
 mcp_data/
+core
