@@ -306,60 +306,59 @@ export class PlugwiseClient {
      * Parse measurements from appliance/location
      */
     private parseMeasurements(source: any, entity: GatewayEntity): void {
-        if (!source.logs || !source.logs.point_log) return;
+        if (!source.logs) return;
         if (!entity.sensors) entity.sensors = {};
 
-        const logs = Array.isArray(source.logs.point_log) ? source.logs.point_log : [source.logs.point_log];
+        // Helper to process a list of logs
+        const processLogs = (logList: any[], suffix: string = '') => {
+            for (const log of logList) {
+                if (!log.type) continue;
 
-        for (const log of logs) {
-            if (!log.type) continue;
+                // Get measurement - handle both direct text and period structure
+                let measurementValue: any;
+                if (log.period && log.period.measurement) {
+                    const meas = log.period.measurement;
+                    measurementValue = typeof meas === 'object' && meas._ !== undefined ? meas._ : meas;
+                } else if (log.measurement) {
+                    const meas = log.measurement;
+                    measurementValue = typeof meas === 'object' && meas._ !== undefined ? meas._ : meas;
+                } else {
+                    continue;
+                }
 
-            // Get measurement - handle both direct text and period structure
-            // xml2js with mergeAttrs creates measurement as {_: "value", log_date: "..."}
-            let measurementValue: any;
-            if (log.period && log.period.measurement) {
-                const meas = log.period.measurement;
-                measurementValue = typeof meas === 'object' && meas._ !== undefined ? meas._ : meas;
-            } else if (log.measurement) {
-                const meas = log.measurement;
-                measurementValue = typeof meas === 'object' && meas._ !== undefined ? meas._ : meas;
-            } else {
-                continue;
+                const value = parseFloat(measurementValue);
+                if (isNaN(value)) continue;
+
+                // Construct the sensor key
+                let key = log.type;
+                
+                // Handle specific P1 mappings and suffixes
+                if (suffix) {
+                    key = `${key}${suffix}`;
+                }
+
+                // Map to SmileSensors keys
+                // We cast to any because we're dynamically assigning keys that match the interface
+                (entity.sensors as any)[key] = value;
             }
+        };
 
-            const value = parseFloat(measurementValue);
-            if (isNaN(value)) continue;
+        // Process point logs (instantaneous values)
+        if (source.logs.point_log) {
+            const logs = Array.isArray(source.logs.point_log) ? source.logs.point_log : [source.logs.point_log];
+            processLogs(logs);
+        }
 
-            switch (log.type) {
-                case 'temperature':
-                    entity.sensors.temperature = value;
-                    break;
-                case 'outdoor_temperature':
-                    entity.sensors.outdoor_temperature = value;
-                    break;
-                case 'intended_boiler_temperature':
-                    entity.sensors.intended_boiler_temperature = value;
-                    break;
-                case 'modulation_level':
-                    entity.sensors.modulation_level = value;
-                    break;
-                case 'valve_position':
-                    entity.sensors.valve_position = value;
-                    break;
-                case 'water_pressure':
-                    entity.sensors.water_pressure = value;
-                    break;
-                case 'humidity':
-                    entity.sensors.humidity = value;
-                    break;
-                case 'dhw_temperature':
-                    entity.sensors.dhw_temperature = value;
-                    break;
-                case 'thermostat':
-                    if (!entity.thermostat) entity.thermostat = {};
-                    entity.thermostat.setpoint = value;
-                    break;
-            }
+        // Process cumulative logs (total counters)
+        if (source.logs.cumulative_log) {
+            const logs = Array.isArray(source.logs.cumulative_log) ? source.logs.cumulative_log : [source.logs.cumulative_log];
+            processLogs(logs, '_cumulative');
+        }
+
+        // Process interval logs (usage over time)
+        if (source.logs.interval_log) {
+            const logs = Array.isArray(source.logs.interval_log) ? source.logs.interval_log : [source.logs.interval_log];
+            processLogs(logs, '_interval');
         }
     }
 

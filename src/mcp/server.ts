@@ -217,11 +217,65 @@ export class PlugwiseMcpServer {
         );
     }
 
+    private async scanAndRefreshHubs(): Promise<void> {
+        console.error('\n🔄 Starting startup hub scan and device refresh...');
+        
+        // Load hubs from files to ensure we have all known hubs
+        await this.discoveryService.loadAllHubsFromFiles();
+        const hubs = this.discoveryService.getDiscoveredHubs();
+
+        if (hubs.length === 0) {
+            console.error('ℹ️  No hubs found to scan.');
+            return;
+        }
+
+        for (const hub of hubs) {
+            console.error(`\n📍 Processing hub: ${hub.name}`);
+            
+            // Verify/Update IP using verifyHub
+            const verifiedHub = await this.discoveryService.verifyHub(hub);
+            
+            if (verifiedHub) {
+                const currentHub = verifiedHub;
+                
+                // Connect and fetch devices
+                try {
+                    console.error(`🔌 Connecting to ${currentHub.name} at ${currentHub.ip}...`);
+                    const client = await this.connectionService.connect({
+                        host: currentHub.ip,
+                        password: currentHub.password,
+                        username: 'smile'
+                    });
+                    
+                    console.error('📥 Fetching devices...');
+                    const devices = await client.getDevices();
+                    
+                    console.error('💾 Saving devices...');
+                    await this.deviceStorage.saveDevices(currentHub.name, devices.entities, currentHub.password);
+                    
+                    // Disconnect to avoid holding resources
+                    this.connectionService.disconnect();
+                    console.error(`✅ Hub ${currentHub.name} refreshed successfully`);
+                    
+                } catch (error) {
+                    console.error(`❌ Failed to refresh devices for hub ${currentHub.name}:`, error);
+                }
+            } else {
+                console.error(`❌ Failed to verify hub ${hub.name}`);
+            }
+        }
+        
+        console.error('\n✨ Startup scan and refresh completed.\n');
+    }
+
     async run(): Promise<void> {
         const config = getServerConfig();
 
         await this.discoveryService.loadFromEnvironment();
         await this.deviceStorage.loadAllDevices();
+
+        // Scan and refresh hubs on startup
+        await this.scanAndRefreshHubs();
 
         console.error('\n🚀 Plugwise MCP Server started!');
         console.error('\nAvailable Tools:');

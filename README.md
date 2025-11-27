@@ -4,6 +4,8 @@ A TypeScript-based Model Context Protocol (MCP) server for Plugwise smart home i
 
 ## ✨ Key Features
 
+- 🤖 **AI Agent Mode**: Natural language control via built-in AI agent
+- 📡 **JSON-RPC Support**: Programmatic API for scripting and automation
 - 🔍 **Automatic Network Scanning**: Discovers all Plugwise hubs on your network
 - 🔐 **Credential Management**: Stores hub passwords securely from .env file
 - 🔌 **Device Control**: Control thermostats, switches, and smart plugs
@@ -69,6 +71,8 @@ See [Quick Test Guide](docs/quick-test-guide.md) for more options.
 
 ### Start the Server
 
+**Option 1: Standard MCP Server** (15+ specialized tools)
+
 When installed via npm:
 
 ```bash
@@ -81,17 +85,36 @@ When running from source:
 npm start
 ```
 
-Server runs at:
-- **MCP Endpoint**: `http://localhost:3000/mcp`
-- **Health Check**: `http://localhost:3000/health`
+**Option 2: AI Agent Mode** (Single natural language tool)
+
+```bash
+# Interactive mode with prompt
+npm run agent "List my devices"
+npm run agent "Set living room to 21 degrees"
+
+# Interactive with verbose debugging
+npm run agent "What's the power usage?" -- -v
+
+# MCP server mode (no arguments)
+npm run agent
+
+# JSON-RPC mode (for scripting)
+npm run agent -- --jsonrpc
+echo '{"jsonrpc":"2.0","method":"execute","params":{"instruction":"List devices"},"id":1}' | npm run agent -- --jsonrpc
+```
+
+See [Agent Documentation](docs/agent-mcp-server.md) and [JSON-RPC Mode](docs/jsonrpc-mode.md) for details.
 
 ## 🔌 Adding the MCP Server to Your Client
 
-The Plugwise MCP server can work with any MCP client that supports standard I/O (stdio) as the transport medium. Here are specific instructions for some popular tools:
+The Plugwise MCP server can work with any MCP client that supports standard I/O (stdio) as the transport medium. Choose between:
+
+- **Standard Mode**: 15+ specialized tools for direct device control
+- **Agent Mode**: Single `manage_plugwise` tool with natural language interface
 
 ### Claude Desktop
 
-To configure Claude Desktop to use the Plugwise MCP server, edit the `claude_desktop_config.json` file. You can open or create this file from the Claude > Settings menu. Select the Developer tab, then click Edit Config.
+**Standard Mode** (15+ tools):
 
 ```json
 {
@@ -104,6 +127,23 @@ To configure Claude Desktop to use the Plugwise MCP server, edit the `claude_des
         "HUB1IP": "192.168.1.100",
         "HUB2": "def67890",
         "HUB2IP": "192.168.1.101"
+      }
+    }
+  }
+}
+```
+
+**Agent Mode** (natural language):
+
+```json
+{
+  "mcpServers": {
+    "plugwise-agent": {
+      "command": "node",
+      "args": ["/path/to/plugwise/dist/cli/plugwise-agent-cli.js"],
+      "env": {
+        "OPENAI_API_KEY": "sk-...",
+        "PLUGWISE_AGENT_MODEL": "gpt-4o-mini"
       }
     }
   }

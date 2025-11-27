@@ -20,15 +20,39 @@ export interface SmileSensors {
     temperature?: number;
     electricity_consumed?: number;
     electricity_consumed_interval?: number;
+    electricity_consumed_cumulative?: number;
+    electricity_consumed_point?: number;
     electricity_consumed_peak_point?: number;
+    electricity_consumed_peak_cumulative?: number;
+    electricity_consumed_peak_interval?: number;
     electricity_consumed_off_peak_point?: number;
+    electricity_consumed_off_peak_cumulative?: number;
+    electricity_consumed_off_peak_interval?: number;
+    
     electricity_produced?: number;
     electricity_produced_interval?: number;
+    electricity_produced_cumulative?: number;
+    electricity_produced_point?: number;
+    electricity_produced_peak_point?: number;
+    electricity_produced_peak_cumulative?: number;
+    electricity_produced_peak_interval?: number;
+    electricity_produced_off_peak_point?: number;
+    electricity_produced_off_peak_cumulative?: number;
+    electricity_produced_off_peak_interval?: number;
+    
     electricity_phase_one_consumed?: number;
     electricity_phase_two_consumed?: number;
     electricity_phase_three_consumed?: number;
+    electricity_phase_one_produced?: number;
+    electricity_phase_two_produced?: number;
+    electricity_phase_three_produced?: number;
+    
     gas_consumed_cumulative?: number;
     gas_consumed_interval?: number;
+    
+    net_electricity_cumulative?: number;
+    net_electricity_point?: number;
+    
     humidity?: number;
     illuminance?: number;
     intended_boiler_temperature?: number;

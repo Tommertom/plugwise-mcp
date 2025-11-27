@@ -80,7 +80,7 @@ export class HubDiscoveryService {
                 discoveredAt: hub.discoveredAt.toISOString()
             };
             await fs.writeFile(filePath, JSON.stringify(hubData, null, 2), 'utf-8');
-            console.log(`✓ Hub saved to ${filePath}`);
+            console.error(`✓ Hub saved to ${filePath}`);
         } catch (error) {
             console.error('Error saving hub to file:', error);
             throw new Error(`Failed to save hub: ${(error as Error).message}`);
@@ -123,13 +123,76 @@ export class HubDiscoveryService {
                     const hub = await this.loadHubFromFile(hubName);
                     if (hub) {
                         this.addHub(hub);
-                        console.log(`✓ Loaded hub from file: ${hubName} at ${hub.ip}`);
+                        console.error(`✓ Loaded hub from file: ${hubName} at ${hub.ip}`);
                     }
                 }
             }
         } catch (error) {
             console.error('Error loading hubs from files:', error);
         }
+    }
+
+    /**
+     * Verify a hub is still accessible at its IP, or find it on the network
+     */
+    async verifyHub(hub: DiscoveredHub): Promise<DiscoveredHub | null> {
+        console.error(`\n🔍 Verifying hub: ${hub.name} (${hub.ip})`);
+
+        // 1. Try to connect to existing IP
+        try {
+            const testClient = new PlugwiseClient({
+                host: hub.ip,
+                password: hub.password,
+                username: 'smile'
+            });
+
+            // Short timeout for verification
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('timeout')), 2000)
+            );
+
+            const gatewayInfo = await Promise.race([
+                testClient.connect(),
+                timeoutPromise
+            ]);
+
+            if (gatewayInfo) {
+                console.error(`✅ Hub verified at ${hub.ip}`);
+                // Update details if changed
+                const updatedHub: DiscoveredHub = {
+                    ...hub,
+                    name: gatewayInfo.name || hub.name,
+                    model: gatewayInfo.model || hub.model,
+                    firmware: gatewayInfo.version || hub.firmware,
+                    discoveredAt: new Date()
+                };
+                this.addHub(updatedHub);
+                await this.saveHubToFile(hub.name, updatedHub);
+                return updatedHub;
+            }
+        } catch (error) {
+            console.error(`⚠️  Hub not reachable at ${hub.ip}: ${(error as Error).message}`);
+        }
+
+        // 2. If not found, scan network
+        console.error(`🔄 Scanning network for hub with password/ID: ${hub.password}`);
+        const networkToScan = this.detectLocalNetwork();
+        const foundHub = await this.scanForHub(networkToScan, hub.password, hub.name);
+
+        if (foundHub) {
+            console.error(`✅ Hub relocated at ${foundHub.ip}`);
+            // Preserve original name if the scan didn't find a better one or if we want to keep the file name
+            const updatedHub = {
+                ...foundHub,
+                name: hub.name // Keep the original name/ID used for the file
+            };
+            this.addHub(updatedHub);
+            await this.saveHubToFile(hub.name, updatedHub);
+            return updatedHub;
+        }
+
+        console.error(`❌ Hub ${hub.name} could not be found on the network`);
+        return null;
     }
 
     /**
@@ -141,66 +204,42 @@ export class HubDiscoveryService {
         error?: string;
     }> {
         try {
-            console.log(`\n${'='.repeat(80)}`);
-            console.log(`🔍 ADD HUB: ${hubName}`);
-            console.log(`${'='.repeat(80)}\n`);
+            console.error(`\n${'='.repeat(80)}`);
+            console.error(`🔍 ADD HUB: ${hubName}`);
+            console.error(`${'='.repeat(80)}\n`);
 
             // First, check if we already have this hub in a file
-            console.log(`📁 Checking for saved hub configuration...`);
+            console.error(`📁 Checking for saved hub configuration...`);
             const existingHub = await this.loadHubFromFile(hubName);
             if (existingHub) {
-                console.log(`✓ Found saved hub at ${existingHub.ip}`)
-                console.log(`🔌 Verifying connection to saved IP...`);
-                // Try to connect to verify it's still there
-                try {
-                    const testClient = new PlugwiseClient({
-                        host: existingHub.ip,
-                        password: hubName,
-                        username: 'smile'
-                    });
-
-                    const gatewayInfo = await testClient.connect();
-                    const updatedHub: DiscoveredHub = {
-                        name: gatewayInfo.name || hubName,
-                        ip: existingHub.ip,
-                        password: hubName,
-                        model: gatewayInfo.model,
-                        firmware: gatewayInfo.version,
-                        discoveredAt: new Date()
-                    };
-
-                    console.log(`✅ Connection successful!`);
-                    console.log(`   Hub: ${updatedHub.name} (${updatedHub.model})`);
-                    console.log(`   IP: ${updatedHub.ip}`);
-                    console.log(`   Firmware: ${updatedHub.firmware}\n`);
-
-                    this.addHub(updatedHub);
-                    await this.saveHubToFile(hubName, updatedHub);
-
-                    return { success: true, hub: updatedHub };
-                } catch (error) {
-                    // Hub at saved IP is no longer accessible, scan network
-                    console.log(`⚠️  Hub at saved IP ${existingHub.ip} not accessible: ${(error as Error).message}`);
-                    console.log(`   Proceeding to network scan...\n`);
+                console.error(`✓ Found saved hub at ${existingHub.ip}`)
+                // Use verifyHub logic
+                const verifiedHub = await this.verifyHub(existingHub);
+                if (verifiedHub) {
+                    return { success: true, hub: verifiedHub };
                 }
+                // If verifyHub failed, it already tried scanning.
+                // But maybe we want to try scanning with hubName as password if existingHub had a different password?
+                // Assuming existingHub.password is correct (which should be hubName usually).
             } else {
-                console.log(`ℹ️  No saved configuration found\n`);
+                console.error(`ℹ️  No saved configuration found\n`);
             }
 
             // Scan the network to find the hub
             const networkToScan = this.detectLocalNetwork();
-            console.log(`📡 Network to scan: ${networkToScan}\n`);
+            console.error(`📡 Network to scan: ${networkToScan}\n`);
 
-            const hub = await this.scanForSpecificHub(networkToScan, hubName);
+            // Use hubName as password/ID
+            const hub = await this.scanForHub(networkToScan, hubName, hubName);
 
             if (hub) {
                 this.addHub(hub);
                 await this.saveHubToFile(hubName, hub);
-                console.log(`\n✅ Hub successfully added and saved!\n`);
+                console.error(`\n✅ Hub successfully added and saved!\n`);
                 return { success: true, hub };
             } else {
                 const errorMsg = `Hub "${hubName}" not found on network ${networkToScan}. Please ensure the hub is connected and the name is correct.`;
-                console.log(`\n❌ ${errorMsg}\n`);
+                console.error(`\n❌ ${errorMsg}\n`);
                 return {
                     success: false,
                     error: errorMsg
@@ -208,7 +247,7 @@ export class HubDiscoveryService {
             }
         } catch (error) {
             const errorMsg = (error as Error).message;
-            console.log(`\n❌ Error: ${errorMsg}\n`);
+            console.error(`\n❌ Error: ${errorMsg}\n`);
             return {
                 success: false,
                 error: errorMsg
@@ -217,19 +256,20 @@ export class HubDiscoveryService {
     }
 
     /**
-     * Scan network for a specific hub by name/password
+     * Scan network for a specific hub by password (ID)
      */
-    private async scanForSpecificHub(
+    private async scanForHub(
         network: string,
-        hubName: string
+        password: string,
+        knownName?: string
     ): Promise<DiscoveredHub | null> {
         const [baseIp] = network.split('/');
         const [octet1, octet2, octet3] = baseIp.split('.');
         const networkBase = `${octet1}.${octet2}.${octet3}`;
 
-        console.log(`🔍 Starting network scan on ${networkBase}.1-254 for hub: ${hubName}`);
-        console.log(`⏱️  Timeout per IP: 3 seconds`);
-        console.log(`📊 Total IPs to scan: 254`);
+        console.error(`🔍 Starting network scan on ${networkBase}.1-254 for hub: ${knownName || password}`);
+        console.error(`⏱️  Timeout per IP: 3 seconds`);
+        console.error(`📊 Total IPs to scan: 254`);
 
         let foundHub: DiscoveredHub | null = null;
         let scannedCount = 0;
@@ -252,7 +292,7 @@ export class HubDiscoveryService {
                     try {
                         const testClient = new PlugwiseClient({
                             host: ip,
-                            password: hubName,
+                            password: password,
                             username: 'smile'
                         });
 
@@ -268,9 +308,9 @@ export class HubDiscoveryService {
 
                         if (gatewayInfo) {
                             const hub: DiscoveredHub = {
-                                name: gatewayInfo.name || hubName,
+                                name: gatewayInfo.name || knownName || 'Unknown',
                                 ip,
-                                password: hubName,
+                                password: password,
                                 model: gatewayInfo.model,
                                 firmware: gatewayInfo.version,
                                 discoveredAt: new Date()
@@ -279,9 +319,9 @@ export class HubDiscoveryService {
                             if (!foundHub) {
                                 foundHub = hub;
                                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                                console.log(`✅ SUCCESS! Found hub at ${ip}: ${hub.name} (${hub.model})`);
-                                console.log(`   Firmware: ${hub.firmware}`);
-                                console.log(`   Scan time: ${elapsed}s, IPs checked: ${scannedCount}`);
+                                console.error(`✅ SUCCESS! Found hub at ${ip}: ${hub.name} (${hub.model})`);
+                                console.error(`   Firmware: ${hub.firmware}`);
+                                console.error(`   Scan time: ${elapsed}s, IPs checked: ${scannedCount}`);
                             }
                             return hub;
                         }
@@ -289,7 +329,7 @@ export class HubDiscoveryService {
                         // Log detailed errors for debugging
                         const errorMsg = (error as Error).message;
                         if (errorMsg !== 'timeout' && !errorMsg.includes('ECONNREFUSED') && !errorMsg.includes('ETIMEDOUT')) {
-                            console.log(`   ⚠️  ${ip}: ${errorMsg}`);
+                            // console.error(`   ⚠️  ${ip}: ${errorMsg}`);
                         }
                     } finally {
                         activeScans--;
@@ -298,7 +338,7 @@ export class HubDiscoveryService {
                         // Progress logging every 50 IPs
                         if (scannedCount % 50 === 0) {
                             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                            console.log(`   📊 Progress: ${scannedCount}/254 IPs scanned (${elapsed}s elapsed, ${activeScans} active)`);
+                            console.error(`   📊 Progress: ${scannedCount}/254 IPs scanned (${elapsed}s elapsed, ${activeScans} active)`);
                         }
                     }
                     return null;
@@ -307,16 +347,16 @@ export class HubDiscoveryService {
         }
 
         // Wait for all scans to complete or hub to be found
-        const results = await Promise.all(scanPromises);
+        await Promise.all(scanPromises);
 
         const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
         if (foundHub) {
-            console.log(`🎉 Scan completed successfully in ${totalElapsed}s`);
+            console.error(`🎉 Scan completed successfully in ${totalElapsed}s`);
             return foundHub;
         } else {
-            console.log(`❌ Scan completed - no hub found in ${totalElapsed}s`);
-            console.log(`   Scanned ${scannedCount} IPs on network ${networkBase}.0/24`);
+            console.error(`❌ Scan completed - no hub found in ${totalElapsed}s`);
+            console.error(`   Scanned ${scannedCount} IPs on network ${networkBase}.0/24`);
             return null;
         }
     }
@@ -341,12 +381,12 @@ export class HubDiscoveryService {
      * Reads HUBx and HUBxIP variables and pre-populates discoveredHubs
      */
     async loadFromEnvironment(): Promise<void> {
-        console.log('Loading HUB configurations from .env...');
+        console.error('Loading HUB configurations from .env...');
 
         const credentials = loadHubCredentials();
 
         if (credentials.size === 0) {
-            console.log('No HUBx/HUBxIP pairs found in .env file');
+            console.error('No HUBx/HUBxIP pairs found in .env file');
             return;
         }
 
@@ -372,7 +412,7 @@ export class HubDiscoveryService {
                     };
 
                     this.addHub(hub);
-                    console.log(`✓ Loaded HUB${index} at ${creds.ip}: ${hub.name} (${hub.model})`);
+                    console.error(`✓ Loaded HUB${index} at ${creds.ip}: ${hub.name} (${hub.model})`);
                 } catch (error) {
                     // If connection fails, still store the hub with basic info
                     const hub: DiscoveredHub = {
@@ -383,12 +423,12 @@ export class HubDiscoveryService {
                     };
 
                     this.addHub(hub);
-                    console.log(`⚠ Loaded HUB${index} at ${creds.ip} (connection failed, stored credentials only)`);
+                    console.error(`⚠ Loaded HUB${index} at ${creds.ip} (connection failed, stored credentials only)`);
                 }
             }
         }
 
-        console.log(`✓ Loaded ${this.discoveredHubs.size} hub(s) from .env`);
+        console.error(`✓ Loaded ${this.discoveredHubs.size} hub(s) from .env`);
     }
 
     /**
@@ -413,7 +453,7 @@ export class HubDiscoveryService {
             .map(h => h.ip!);
 
         if (knownIPs.length > 0) {
-            console.log(`Testing ${knownIPs.length} known hub IP(s)...`);
+            console.error(`Testing ${knownIPs.length} known hub IP(s)...`);
 
             for (const [index, config] of hubConfigs.entries()) {
                 if (!config.ip) continue;
@@ -438,9 +478,9 @@ export class HubDiscoveryService {
                     };
                     discovered.push(hub);
                     this.addHub(hub);
-                    console.log(`✓ Found hub at ${config.ip}: ${hub.name}`);
+                    console.error(`✓ Found hub at ${config.ip}: ${hub.name}`);
                 } catch (error) {
-                    console.log(`✗ No hub at ${config.ip}`);
+                    console.error(`✗ No hub at ${config.ip}`);
                 }
             }
         }
@@ -450,7 +490,7 @@ export class HubDiscoveryService {
 
         if (shouldScanNetwork) {
             const networkToScan = network || this.detectLocalNetwork();
-            console.log(`Scanning network ${networkToScan}...`);
+            console.error(`Scanning network ${networkToScan}...`);
 
             const scanResults = await this.scanNetworkRange(networkToScan, hubConfigs);
             discovered.push(...scanResults.discovered);
@@ -473,7 +513,7 @@ export class HubDiscoveryService {
                 const ip = srcMatch[1];
                 const [octet1, octet2, octet3] = ip.split('.');
                 const network = `${octet1}.${octet2}.${octet3}.0/24`;
-                console.log(`📡 Detected network from default route: ${network}`);
+                console.error(`📡 Detected network from default route: ${network}`);
                 return network;
             }
 
@@ -481,11 +521,11 @@ export class HubDiscoveryService {
             const routeOutput = execSync('ip route | grep "scope link" | grep -v tun | grep -v tap | head -1', { encoding: 'utf-8' });
             const match = routeOutput.match(/(\d+\.\d+\.\d+\.\d+\/\d+)/);
             if (match) {
-                console.log(`📡 Detected network from scope link: ${match[1]}`);
+                console.error(`📡 Detected network from scope link: ${match[1]}`);
                 return match[1];
             }
         } catch (error) {
-            console.log(`⚠️  Network detection failed, using fallback: 192.168.1.0/24`);
+            console.error(`⚠️  Network detection failed, using fallback: 192.168.1.0/24`);
         }
         return '192.168.1.0/24';
     }
@@ -553,7 +593,7 @@ export class HubDiscoveryService {
                                 };
                                 discovered.push(hub);
                                 this.addHub(hub);
-                                console.log(`✓ Found hub at ${ip}: ${hub.name}`);
+                                console.error(`✓ Found hub at ${ip}: ${hub.name}`);
                             }
                         } catch (error) {
                             // Ignore connection failures during scan
