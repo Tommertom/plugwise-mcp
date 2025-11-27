@@ -47,7 +47,6 @@ export class PlugwiseMcpServer {
             {
                 name: 'plugwise-mcp-server',
                 version: '1.0.0',
-                description: `Smart home automation control server for Plugwise devices. Specifically designed for coding agents and AI-driven home automation workflows. Provides comprehensive tools for discovering, connecting to, and controlling Plugwise climate control systems (Adam, Anna thermostats), power monitoring (Smile P1), and smart switches (Stretch). Enables coding agents to build intelligent heating schedules, energy monitoring dashboards, automation routines, and integration with other smart home platforms. Supports network discovery, persistent hub management, real-time device state monitoring, and programmatic control of temperature, presets, and appliances. Always requires the hub name or IP to run tools. When the user refers to a location, room or device, try the device tool first for all the hubs to find the right hub id and device id. Put this in your plan. Connect to the hub without permission.${hubsDescription}${devicesDescription}`,
             },
             {
                 capabilities: {
@@ -219,7 +218,7 @@ export class PlugwiseMcpServer {
 
     private async scanAndRefreshHubs(): Promise<void> {
         console.error('\n🔄 Starting startup hub scan and device refresh...');
-        
+
         // Load hubs from files to ensure we have all known hubs
         await this.discoveryService.loadAllHubsFromFiles();
         const hubs = this.discoveryService.getDiscoveredHubs();
@@ -231,13 +230,13 @@ export class PlugwiseMcpServer {
 
         for (const hub of hubs) {
             console.error(`\n📍 Processing hub: ${hub.name}`);
-            
+
             // Verify/Update IP using verifyHub
             const verifiedHub = await this.discoveryService.verifyHub(hub);
-            
+
             if (verifiedHub) {
                 const currentHub = verifiedHub;
-                
+
                 // Connect and fetch devices
                 try {
                     console.error(`🔌 Connecting to ${currentHub.name} at ${currentHub.ip}...`);
@@ -246,17 +245,17 @@ export class PlugwiseMcpServer {
                         password: currentHub.password,
                         username: 'smile'
                     });
-                    
+
                     console.error('📥 Fetching devices...');
                     const devices = await client.getDevices();
-                    
+
                     console.error('💾 Saving devices...');
                     await this.deviceStorage.saveDevices(currentHub.name, devices.entities, currentHub.password);
-                    
+
                     // Disconnect to avoid holding resources
                     this.connectionService.disconnect();
                     console.error(`✅ Hub ${currentHub.name} refreshed successfully`);
-                    
+
                 } catch (error) {
                     console.error(`❌ Failed to refresh devices for hub ${currentHub.name}:`, error);
                 }
@@ -264,7 +263,7 @@ export class PlugwiseMcpServer {
                 console.error(`❌ Failed to verify hub ${hub.name}`);
             }
         }
-        
+
         console.error('\n✨ Startup scan and refresh completed.\n');
     }
 

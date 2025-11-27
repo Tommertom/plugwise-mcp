@@ -26,7 +26,6 @@ export class AgentMcpServer {
             {
                 name: 'plugwise-agent-mcp-server',
                 version: '1.0.0',
-                description: 'AI-powered Plugwise control through natural language instructions. Manage your Plugwise smart home devices using conversational commands.',
             },
             {
                 capabilities: {
@@ -35,7 +34,7 @@ export class AgentMcpServer {
             }
         );
 
-        this.cleanup = async () => {};
+        this.cleanup = async () => { };
         this.setupHandlers();
     }
 
