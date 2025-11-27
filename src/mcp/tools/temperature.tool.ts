@@ -5,6 +5,7 @@
 
 import { ConnectionService } from '../../services/connection.service.js';
 import { ToolRegistry } from '../tool-registry.js';
+import { successResponse, errorResponse } from './tool-helpers.js';
 
 export function registerTemperatureTools(registry: ToolRegistry, connectionService: ConnectionService) {
     // Set Temperature Tool
@@ -44,26 +45,10 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
         }) => {
             try {
                 const client = connectionService.ensureConnected();
-
-                await client.setTemperature({
-                    location_id,
-                    setpoint,
-                    setpoint_low,
-                    setpoint_high
-                });
-
-                const output = { success: true };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                await client.setTemperature({ location_id, setpoint, setpoint_low, setpoint_high });
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -93,19 +78,9 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
             try {
                 const client = connectionService.ensureConnected();
                 await client.setPreset(location_id, preset);
-
-                const output = { success: true };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -131,8 +106,8 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
             try {
                 const client = connectionService.ensureConnected();
                 const data = await client.getDevices();
-
                 const device = data.entities[device_id];
+                
                 if (!device) {
                     throw new Error(`Device ${device_id} not found`);
                 }
@@ -148,18 +123,9 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
                     climate_mode: device.climate_mode
                 };
 
-                const output = { success: true, data: result };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse(result);
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -202,18 +168,9 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
                         climate_mode: device.climate_mode
                     }));
 
-                const output = { success: true, data: thermostats };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse(thermostats);
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -239,8 +196,8 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
             try {
                 const client = connectionService.ensureConnected();
                 const data = await client.getDevices();
-
                 const device = data.entities[device_id];
+
                 if (!device) {
                     throw new Error(`Device ${device_id} not found`);
                 }
@@ -258,18 +215,9 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
                     resolution: device.temperature_offset.resolution
                 };
 
-                const output = { success: true, data: result };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse(result);
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -299,19 +247,9 @@ export function registerTemperatureTools(registry: ToolRegistry, connectionServi
             try {
                 const client = connectionService.ensureConnected();
                 await client.setTemperatureOffset(device_id, offset);
-
-                const output = { success: true };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );

@@ -1,11 +1,10 @@
 /**
-* Device Storage Service
-* Manages storage and retrieval of Plugwise device information
-*/
+ * Device Storage Service
+ * Manages storage and retrieval of Plugwise device information
+ */
 
-import { promises as fs } from 'fs';
-import * as path from 'path';
 import { GatewayEntity } from '../types/plugwise-types.js';
+import { JsonStorageService } from './storage.service.js';
 
 export interface StoredDevice {
     id: string;
@@ -24,28 +23,23 @@ export interface StoredDevice {
     };
 }
 
+interface DeviceFileData {
+    hubName: string;
+    deviceId: string;
+    password?: string;
+    device: StoredDevice;
+}
+
 /**
  * Device Storage Service
  * Handles saving and loading device configurations from disk
  */
 export class DeviceStorageService {
-    private devicesDirectory: string;
+    private storage: JsonStorageService<DeviceFileData>;
     private devices: Map<string, StoredDevice> = new Map();
 
     constructor() {
-        this.devicesDirectory = path.join(process.cwd(), 'mcp_data', 'plugwise', 'devices');
-        this.ensureDevicesDirectory();
-    }
-
-    /**
-     * Ensure the devices directory exists
-     */
-    private async ensureDevicesDirectory(): Promise<void> {
-        try {
-            await fs.mkdir(this.devicesDirectory, { recursive: true });
-        } catch (error) {
-            console.error('Error creating devices directory:', error);
-        }
+        this.storage = new JsonStorageService<DeviceFileData>('devices');
     }
 
     /**
@@ -79,171 +73,71 @@ export class DeviceStorageService {
 
     /**
      * Save devices for a specific hub
-     * Each device is saved as a separate file: {hubName}_{deviceId}.json
      */
     async saveDevices(hubName: string, entities: Record<string, GatewayEntity>, password?: string): Promise<void> {
-        try {
-            await this.ensureDevicesDirectory();
+        const devices: StoredDevice[] = Object.entries(entities).map(([id, entity]) =>
+            this.convertToStoredDevice(id, entity, hubName)
+        );
 
-            const devices: StoredDevice[] = Object.entries(entities).map(([id, entity]) =>
-                this.convertToStoredDevice(id, entity, hubName)
-            );
+        let savedCount = 0;
+        for (const device of devices) {
+            const fileName = `${hubName}_${device.id}`;
+            const deviceData: DeviceFileData = {
+                hubName,
+                deviceId: device.id,
+                password,
+                device
+            };
 
-            // Save each device as a separate file
-            let savedCount = 0;
-            for (const device of devices) {
-                const fileName = `${hubName}_${device.id}.json`;
-                const filePath = path.join(this.devicesDirectory, fileName);
-
-                const deviceData: any = {
-                    hubName,
-                    deviceId: device.id,
-                    humanReadableName: device.name,
-                    updatedAt: new Date().toISOString(),
-                    device
-                };
-
-                // Add password if provided
-                if (password) {
-                    deviceData.password = password;
-                }
-
-                await fs.writeFile(filePath, JSON.stringify(deviceData, null, 2), 'utf-8');
-
-                // Update in-memory cache
-                this.devices.set(`${hubName}:${device.id}`, device);
+            try {
+                await this.storage.save(fileName, deviceData);
+                this.devices.set(device.id, device);
                 savedCount++;
+            } catch (error) {
+                console.error(`Failed to save device ${device.id}:`, error);
             }
-
-            console.log(`✓ Saved ${savedCount} device(s) for hub: ${hubName} (individual files)`);
-        } catch (error) {
-            console.error(`Error saving devices for hub ${hubName}:`, error);
-            throw new Error(`Failed to save devices: ${(error as Error).message}`);
         }
+
+        console.error(`✓ Saved ${savedCount} devices for hub ${hubName}`);
     }
 
     /**
-     * Load devices for a specific hub
-     * Reads individual device files with pattern: {hubName}_{deviceId}.json
+     * Load all devices from storage
      */
-    async loadDevicesForHub(hubName: string): Promise<StoredDevice[]> {
+    async loadAllDevices(): Promise<void> {
         try {
-            await this.ensureDevicesDirectory();
-            const files = await fs.readdir(this.devicesDirectory);
-            const devices: StoredDevice[] = [];
-
-            // Filter files that match the hubName pattern
-            const hubFiles = files.filter(file =>
-                file.startsWith(`${hubName}_`) && file.endsWith('.json')
-            );
-
-            for (const file of hubFiles) {
-                try {
-                    const filePath = path.join(this.devicesDirectory, file);
-                    const content = await fs.readFile(filePath, 'utf-8');
-                    const data = JSON.parse(content);
-
-                    if (data.device) {
-                        // Update in-memory cache
-                        this.devices.set(`${hubName}:${data.device.id}`, data.device);
-                        devices.push(data.device);
-                    }
-                } catch (error) {
-                    console.error(`Error loading device file ${file}:`, error);
-                    // Continue loading other devices
+            const allDevices = await this.storage.loadAll();
+            
+            for (const [_, deviceData] of allDevices) {
+                if (deviceData.device) {
+                    this.devices.set(deviceData.deviceId, deviceData.device);
                 }
             }
 
-            return devices;
-        } catch (error) {
-            // Directory doesn't exist or can't be read
-            return [];
-        }
-    }
-
-    /**
-     * Load all devices from all hub files
-     * Reads individual device files with pattern: {hubName}_{deviceId}.json
-     */
-    async loadAllDevices(): Promise<Map<string, StoredDevice[]>> {
-        const devicesByHub = new Map<string, StoredDevice[]>();
-
-        try {
-            await this.ensureDevicesDirectory();
-            const files = await fs.readdir(this.devicesDirectory);
-
-            // Group files by hub name
-            const hubNames = new Set<string>();
-            for (const file of files) {
-                if (file.endsWith('.json')) {
-                    // Extract hub name from filename pattern: {hubName}_{deviceId}.json
-                    const parts = file.replace('.json', '').split('_');
-                    if (parts.length >= 2) {
-                        const hubName = parts[0];
-                        hubNames.add(hubName);
-                    }
-                }
-            }
-
-            // Load devices for each hub
-            for (const hubName of hubNames) {
-                const devices = await this.loadDevicesForHub(hubName);
-                if (devices.length > 0) {
-                    devicesByHub.set(hubName, devices);
-                    console.log(`✓ Loaded ${devices.length} device(s) for hub: ${hubName}`);
-                }
-            }
+            console.error(`✓ Loaded ${this.devices.size} devices from storage`);
         } catch (error) {
             console.error('Error loading devices:', error);
         }
-
-        return devicesByHub;
     }
 
     /**
-     * Get all devices from memory
+     * Get all loaded devices
      */
-    getAllDevices(): StoredDevice[] {
-        return Array.from(this.devices.values());
+    getDevices(): Map<string, StoredDevice> {
+        return this.devices;
     }
 
     /**
-     * Get devices by hub name
+     * Get devices for a specific hub
      */
     getDevicesByHub(hubName: string): StoredDevice[] {
         return Array.from(this.devices.values()).filter(d => d.hubName === hubName);
     }
 
     /**
-     * Find device by ID across all hubs
+     * Get a specific device by ID
      */
-    findDevice(deviceId: string): StoredDevice | undefined {
-        // Try exact match first (hubName:deviceId)
-        if (this.devices.has(deviceId)) {
-            return this.devices.get(deviceId);
-        }
-
-        // Try to find by device ID without hub prefix
-        for (const [key, device] of this.devices.entries()) {
-            if (device.id === deviceId || key.endsWith(`:${deviceId}`)) {
-                return device;
-            }
-        }
-
-        return undefined;
-    }
-
-    /**
-     * Get device count
-     */
-    getDeviceCount(): number {
-        return this.devices.size;
-    }
-
-    /**
-     * Clear all devices from memory
-     */
-    clear(): void {
-        this.devices.clear();
+    getDevice(deviceId: string): StoredDevice | undefined {
+        return this.devices.get(deviceId);
     }
 }

@@ -4,10 +4,9 @@
  */
 
 import { execSync } from 'child_process';
-import { promises as fs } from 'fs';
-import * as path from 'path';
 import { PlugwiseClient } from '../client/plugwise-client.js';
 import { loadHubCredentials, HubCredentials } from '../config/environment.js';
+import { JsonStorageService } from './storage.service.js';
 
 export interface DiscoveredHub {
     name: string;
@@ -18,29 +17,25 @@ export interface DiscoveredHub {
     discoveredAt: Date;
 }
 
+interface HubFileData {
+    name: string;
+    ip: string;
+    password: string;
+    model?: string;
+    firmware?: string;
+    discoveredAt: string;
+}
+
 /**
  * Hub Discovery Service
  * Maintains a registry of discovered hubs and provides discovery functionality
  */
 export class HubDiscoveryService {
     private discoveredHubs: Map<string, DiscoveredHub> = new Map();
-    private hubsDirectory: string;
+    private storage: JsonStorageService<HubFileData>;
 
     constructor() {
-        // Set hubs directory to mcp_data/plugwise/hubs folder
-        this.hubsDirectory = path.join(process.cwd(), 'mcp_data', 'plugwise', 'hubs');
-        this.ensureHubsDirectory();
-    }
-
-    /**
-     * Ensure the hubs directory exists
-     */
-    private async ensureHubsDirectory(): Promise<void> {
-        try {
-            await fs.mkdir(this.hubsDirectory, { recursive: true });
-        } catch (error) {
-            console.error('Error creating hubs directory:', error);
-        }
+        this.storage = new JsonStorageService<HubFileData>('hubs');
     }
 
     /**
@@ -65,13 +60,11 @@ export class HubDiscoveryService {
     }
 
     /**
-     * Save a hub to a JSON file in the mcp_data/plugwise/hubs directory
+     * Save a hub to storage
      */
     private async saveHubToFile(hubName: string, hub: DiscoveredHub): Promise<void> {
         try {
-            await this.ensureHubsDirectory();
-            const filePath = path.join(this.hubsDirectory, `${hubName}.json`);
-            const hubData = {
+            const hubData: HubFileData = {
                 name: hub.name,
                 ip: hub.ip,
                 password: hub.password,
@@ -79,8 +72,8 @@ export class HubDiscoveryService {
                 firmware: hub.firmware,
                 discoveredAt: hub.discoveredAt.toISOString()
             };
-            await fs.writeFile(filePath, JSON.stringify(hubData, null, 2), 'utf-8');
-            console.error(`✓ Hub saved to ${filePath}`);
+            await this.storage.save(hubName, hubData);
+            console.error(`✓ Hub saved: ${hubName}`);
         } catch (error) {
             console.error('Error saving hub to file:', error);
             throw new Error(`Failed to save hub: ${(error as Error).message}`);
@@ -88,13 +81,13 @@ export class HubDiscoveryService {
     }
 
     /**
-     * Load a hub from a JSON file in the mcp_data/plugwise/hubs directory
+     * Load a hub from storage
      */
     private async loadHubFromFile(hubName: string): Promise<DiscoveredHub | null> {
         try {
-            const filePath = path.join(this.hubsDirectory, `${hubName}.json`);
-            const content = await fs.readFile(filePath, 'utf-8');
-            const hubData = JSON.parse(content);
+            const hubData = await this.storage.load(hubName);
+            if (!hubData) return null;
+            
             return {
                 name: hubData.name,
                 ip: hubData.ip,
@@ -104,28 +97,28 @@ export class HubDiscoveryService {
                 discoveredAt: new Date(hubData.discoveredAt)
             };
         } catch (error) {
-            // File doesn't exist or can't be read
             return null;
         }
     }
 
     /**
-     * Load all hubs from the mcp_data/plugwise/hubs directory
+     * Load all hubs from storage
      */
     async loadAllHubsFromFiles(): Promise<void> {
         try {
-            await this.ensureHubsDirectory();
-            const files = await fs.readdir(this.hubsDirectory);
+            const allHubs = await this.storage.loadAll();
 
-            for (const file of files) {
-                if (file.endsWith('.json')) {
-                    const hubName = file.replace('.json', '');
-                    const hub = await this.loadHubFromFile(hubName);
-                    if (hub) {
-                        this.addHub(hub);
-                        console.error(`✓ Loaded hub from file: ${hubName} at ${hub.ip}`);
-                    }
-                }
+            for (const [hubName, hubData] of allHubs) {
+                const hub: DiscoveredHub = {
+                    name: hubData.name,
+                    ip: hubData.ip,
+                    password: hubData.password,
+                    model: hubData.model,
+                    firmware: hubData.firmware,
+                    discoveredAt: new Date(hubData.discoveredAt)
+                };
+                this.addHub(hub);
+                console.error(`✓ Loaded hub from file: ${hubName} at ${hub.ip}`);
             }
         } catch (error) {
             console.error('Error loading hubs from files:', error);

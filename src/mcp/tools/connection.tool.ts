@@ -7,6 +7,7 @@ import { ConnectionService } from '../../services/connection.service.js';
 import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
 import { PlugwiseConfig } from '../../types/plugwise-types.js';
 import { ToolRegistry } from '../tool-registry.js';
+import { successResponse, errorResponse } from './tool-helpers.js';
 
 export function registerConnectionTool(
     registry: ToolRegistry,
@@ -81,8 +82,7 @@ export function registerConnectionTool(
                     throw new Error('Failed to retrieve gateway information');
                 }
 
-                const output = {
-                    success: true,
+                return successResponse({
                     gateway_info: {
                         name: gatewayInfo.name,
                         model: gatewayInfo.model,
@@ -91,32 +91,9 @@ export function registerConnectionTool(
                         hostname: gatewayInfo.hostname,
                         mac_address: gatewayInfo.mac_address
                     }
-                };
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
-                    structuredContent: output
-                };
+                });
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );

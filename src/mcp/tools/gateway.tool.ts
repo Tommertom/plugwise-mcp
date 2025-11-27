@@ -6,6 +6,7 @@
 import { ConnectionService } from '../../services/connection.service.js';
 import { GatewayMode, DHWMode, RegulationMode } from '../../types/plugwise-types.js';
 import { ToolRegistry } from '../tool-registry.js';
+import { successResponse, errorResponse } from './tool-helpers.js';
 
 export function registerGatewayTools(registry: ToolRegistry, connectionService: ConnectionService) {
     registry.registerTool(
@@ -29,19 +30,9 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
             try {
                 const client = connectionService.ensureConnected();
                 await client.setGatewayMode(mode as GatewayMode);
-
-                const output = { success: true };
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -67,18 +58,9 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
             try {
                 const client = connectionService.ensureConnected();
                 await client.setDHWMode(mode as DHWMode);
-
-                const output = { success: true };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -104,18 +86,9 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
             try {
                 const client = connectionService.ensureConnected();
                 await client.setRegulationMode(mode as RegulationMode);
-
-                const output = { success: true };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -124,7 +97,7 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
         'delete_notification',
         {
             title: 'Delete Notification',
-            description: 'Delete the active notification from the Plugwise gateway. Use this to clear system notifications, alerts, or warnings displayed on the gateway.',
+            description: 'Delete all gateway notifications. Use this to clear error messages or warnings from the Plugwise gateway.',
             inputSchema: {
                 type: 'object',
                 properties: {}
@@ -134,18 +107,9 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
             try {
                 const client = connectionService.ensureConnected();
                 await client.deleteNotification();
-
-                const output = { success: true };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
@@ -154,7 +118,7 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
         'reboot_gateway',
         {
             title: 'Reboot Gateway',
-            description: 'Reboot the Plugwise gateway (use with caution). This will restart the gateway, temporarily interrupting all control and monitoring. The gateway will be offline for 1-2 minutes. Only use when necessary for troubleshooting.',
+            description: 'Reboot the Plugwise gateway. Use with caution as this will temporarily disconnect all devices and interrupt heating/cooling control. The gateway typically takes 1-2 minutes to fully restart.',
             inputSchema: {
                 type: 'object',
                 properties: {}
@@ -164,18 +128,9 @@ export function registerGatewayTools(registry: ToolRegistry, connectionService: 
             try {
                 const client = connectionService.ensureConnected();
                 await client.rebootGateway();
-
-                const output = { success: true };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return successResponse({ success: true, message: 'Gateway reboot initiated' });
             } catch (error) {
-                const output = { success: false, error: (error as Error).message };
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );

@@ -5,6 +5,7 @@
 
 import { ConnectionService } from '../../services/connection.service.js';
 import { ToolRegistry } from '../tool-registry.js';
+import { successResponse, errorResponse } from './tool-helpers.js';
 
 export function registerSwitchTools(registry: ToolRegistry, connectionService: ConnectionService) {
     registry.registerTool(
@@ -39,42 +40,14 @@ export function registerSwitchTools(registry: ToolRegistry, connectionService: C
         }) => {
             try {
                 const client = connectionService.ensureConnected();
-
                 const newState = await client.setSwitchState({
                     appliance_id,
                     state,
                     model
                 });
-
-                const output = {
-                    success: true,
-                    new_state: newState
-                };
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
-                    structuredContent: output
-                };
+                return successResponse({ success: true, new_state: newState });
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );

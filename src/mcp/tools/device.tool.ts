@@ -7,6 +7,7 @@ import { ConnectionService } from '../../services/connection.service.js';
 import { DeviceStorageService } from '../../services/device-storage.service.js';
 import { HubDiscoveryService } from '../../services/hub-discovery.service.js';
 import { ToolRegistry } from '../tool-registry.js';
+import { successResponse, errorResponse } from './tool-helpers.js';
 
 export function registerDeviceTools(
     registry: ToolRegistry, 
@@ -42,38 +43,11 @@ export function registerDeviceTools(
                     await deviceStorage.saveDevices(hubName, data.entities, password);
                 } catch (saveError) {
                     console.error('Failed to save devices:', saveError);
-                    // Continue even if save fails
                 }
 
-                const output = {
-                    success: true,
-                    data
-                };
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
-                    structuredContent: output
-                };
+                return successResponse(data);
             } catch (error) {
-                const output = {
-                    success: false,
-                    error: (error as Error).message
-                };
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(output, null, 2)
-                        }
-                    ],
-                    structuredContent: output
-                };
+                return errorResponse(error as Error);
             }
         }
     );
